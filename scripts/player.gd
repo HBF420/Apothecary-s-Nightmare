@@ -66,7 +66,7 @@ func _check_interaction():
 	elif interact_ray.is_colliding():
 		var collider = interact_ray.get_collider()
 		if collider.has_method("get_interact_label"):
-			interact_label.text = collider.get_interact_label()
+			interact_label.text = collider.get_interact_label(self)
 	elif crafting_spot != null:
 		interact_label.text = crafting_spot.get_interact_label(self)
 

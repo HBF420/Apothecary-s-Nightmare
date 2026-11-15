@@ -4,7 +4,13 @@
 [ext_resource type="Script" uid="uid://du07wlekp2ba5" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" uid="uid://cm6r7rymonfp1" path="res://scripts/item.gd" id="2_item"]
 [ext_resource type="Script" uid="uid://cw1sfg65elviw" path="res://scripts/crafting_spot.gd" id="3_craft"]
+[ext_resource type="Script" path="res://scripts/herb_plant.gd" id="5_herb_plant"]
+[ext_resource type="Script" path="res://scripts/ingredient_rack.gd" id="6_ingredient_rack"]
 [ext_resource type="Script" uid="uid://cfsfv60hdsipc" path="res://scripts/customer.gd" id="4_customer"]
+[ext_resource type="Script" path="res://scripts/mortar_item.gd" id="7_mortar_item"]
+[ext_resource type="Script" path="res://scripts/boiling_pot.gd" id="8_boiling_pot"]
+[ext_resource type="Script" path="res://scripts/vial_item.gd" id="9_vial_item"]
+[ext_resource type="Script" path="res://scripts/placement_slot.gd" id="10_placement_slot"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_1"]
 sky_top_color = Color(0.1, 0.05, 0.02, 1)
@@ -149,6 +155,9 @@ albedo_color = Color(0.28, 0.26, 0.24, 1)
 [sub_resource type="BoxShape3D" id="street_shape"]
 size = Vector3(40, 0.2, 7)
 
+[sub_resource type="BoxShape3D" id="rack_shape"]
+size = Vector3(0.6, 2.0, 1.2)
+
 [sub_resource type="BoxShape3D" id="kill_shape"]
 size = Vector3(50, 1, 50)
 
@@ -166,6 +175,15 @@ size = Vector3(0.2, 0.65, 2.1)
 
 [sub_resource type="BoxShape3D" id="door_gap_left_shape"]
 size = Vector3(0.2, 3.35, 2.1)
+
+[sub_resource type="BoxShape3D" id="pot_shape"]
+size = Vector3(0.5, 0.4, 0.5)
+
+[sub_resource type="BoxShape3D" id="mortar_slot_shape"]
+size = Vector3(0.3, 0.1, 0.3)
+
+[sub_resource type="BoxShape3D" id="vial_slot_shape"]
+size = Vector3(0.15, 0.2, 0.15)
 
 [node name="Main" type="Node3D" unique_id=1059509725]
 script = ExtResource("0_main")
@@ -255,7 +273,7 @@ surface_material_override/0 = SubResource("ceiling_mat")
 shape = SubResource("ceiling_shape")
 
 [node name="Counter" type="StaticBody3D" parent="." unique_id=1002945811]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -3.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -1.85)
 
 [node name="Mesh" type="MeshInstance3D" parent="Counter" unique_id=1159876960]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.0662372)
@@ -266,7 +284,7 @@ surface_material_override/0 = SubResource("counter_mat")
 shape = SubResource("counter_shape")
 
 [node name="Workbench" type="StaticBody3D" parent="." unique_id=436402178]
-transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -3, 0, 1)
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 4.5, -0.2, -3.5)
 
 [node name="Mesh" type="MeshInstance3D" parent="Workbench" unique_id=1238181139]
 mesh = SubResource("workbench_mesh")
@@ -276,14 +294,12 @@ surface_material_override/0 = SubResource("workbench_mat")
 shape = SubResource("workbench_shape")
 
 [node name="CraftingSpot" type="Node3D" parent="." unique_id=389682399]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1.05, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.05, -3.4)
 script = ExtResource("3_craft")
 
 [node name="Mortar" type="StaticBody3D" parent="." unique_id=1970517003]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.3, 1.05, 1.0)
-script = ExtResource("2_item")
-item_type = "mortar"
-display_name = "Mortar"
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.05, -3.4)
+script = ExtResource("7_mortar_item")
 
 [node name="Mesh" type="MeshInstance3D" parent="Mortar" unique_id=1241904331]
 mesh = SubResource("item_mesh_mortar")
@@ -293,10 +309,8 @@ surface_material_override/0 = SubResource("mortar_mat")
 shape = SubResource("item_shape")
 
 [node name="Herbs" type="StaticBody3D" parent="." unique_id=1774008127]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0, 1.05, 1.0)
-script = ExtResource("2_item")
-item_type = "herbs"
-display_name = "Herbs"
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.525, 1.1, 4.35)
+script = ExtResource("5_herb_plant")
 
 [node name="Mesh" type="MeshInstance3D" parent="Herbs" unique_id=169473793]
 mesh = SubResource("item_mesh_herbs")
@@ -306,10 +320,8 @@ surface_material_override/0 = SubResource("herbs_mat")
 shape = SubResource("item_shape")
 
 [node name="Vial" type="StaticBody3D" parent="." unique_id=2083284059]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7, 1.05, 1.0)
-script = ExtResource("2_item")
-item_type = "vial"
-display_name = "Vial"
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.05, -2.8)
+script = ExtResource("9_vial_item")
 
 [node name="Mesh" type="MeshInstance3D" parent="Vial" unique_id=1719933796]
 mesh = SubResource("item_mesh_vial")
@@ -317,6 +329,44 @@ surface_material_override/0 = SubResource("vial_mat")
 
 [node name="Col" type="CollisionShape3D" parent="Vial" unique_id=2059170858]
 shape = SubResource("item_shape")
+
+[node name="Pot" type="StaticBody3D" parent="." unique_id=2100000001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.35, 0.75, 1.5)
+script = ExtResource("8_boiling_pot")
+collision_layer = 2
+collision_mask = 0
+
+[node name="Col" type="CollisionShape3D" parent="Pot" unique_id=2100000002]
+shape = SubResource("pot_shape")
+
+[node name="MortarSlot" type="StaticBody3D" parent="." unique_id=2100000003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.05, -3.4)
+script = ExtResource("10_placement_slot")
+collision_layer = 2
+collision_mask = 0
+accepted_item_type = "mortar"
+slot_display_name = "Mortar"
+
+[node name="Col" type="CollisionShape3D" parent="MortarSlot" unique_id=2100000004]
+shape = SubResource("mortar_slot_shape")
+
+[node name="VialSlot" type="StaticBody3D" parent="." unique_id=2100000005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.05, -2.8)
+script = ExtResource("10_placement_slot")
+collision_layer = 2
+collision_mask = 0
+accepted_item_type = "vial"
+slot_display_name = "Vial"
+
+[node name="Col" type="CollisionShape3D" parent="VialSlot" unique_id=2100000006]
+shape = SubResource("vial_slot_shape")
+
+[node name="Rack" type="StaticBody3D" parent="." unique_id=1830498662]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.0, 2.0, -1.0)
+script = ExtResource("6_ingredient_rack")
+
+[node name="Col" type="CollisionShape3D" parent="Rack" unique_id=1830498663]
+shape = SubResource("rack_shape")
 
 [node name="Customer" type="CharacterBody3D" parent="." unique_id=98178390]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -4.5)

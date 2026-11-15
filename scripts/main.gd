@@ -11,7 +11,7 @@ const PLAYER_SPAWN = Vector3(0, 0.1, 1)
 @export var workbench_pos: Vector3 = Vector3(0, 0, 0)
 
 @export_group("Mortar")
-@export var mortar_scale: float = 0.064
+@export var mortar_scale: float = 0.128
 @export var mortar_pos: Vector3 = Vector3(-0.257, -0.861, -0.065)
 
 @export_group("Customer")
@@ -30,7 +30,6 @@ func _ready():
 	var player = $Player
 	if player:
 		player.add_to_group("player")
-		player.register_crafting_spot($CraftingSpot)
 	_apply_floor_texture()
 	_apply_wall_texture()
 	_apply_street_texture()
@@ -38,9 +37,17 @@ func _ready():
 	_place_workbench_model()
 	_place_mortar_model()
 	_place_herb_model()
+	_place_vial_model()
 	_place_customer()
 	_place_door()
 	_place_windows()
+	_place_interior_wall()
+	_place_bookcase()
+	_place_reading_table()
+	_place_forge()
+	_place_shelf()
+	_place_ingredient_rack()
+	_place_window_table()
 
 func _apply_floor_texture():
 	var texture = load("res://models/dark_wooden_floor__tile_texture_0.png")
@@ -103,27 +110,39 @@ func _place_counter():
 	$Counter.add_child(instance)
 
 func _place_workbench_model():
-	var glb = load("res://models/old_wooden_dinner_table.glb")
+	var glb = load("res://models/apothecary_workbench.glb")
 	if not glb:
 		return
 	var instance = glb.instantiate()
-	instance.scale = Vector3(workbench_scale, workbench_scale, workbench_scale)
+	var wb_scale = 5.0
+	instance.scale = Vector3(wb_scale, wb_scale, wb_scale)
 	instance.position = workbench_pos
+	instance.rotation_degrees = Vector3(0, 90, 0)
 	$Workbench/Mesh.visible = false
 	$Workbench.add_child(instance)
 
 func _place_mortar_model():
-	var glb = load("res://models/mortar.glb")
+	var glb = load("res://models/stone_mortar.glb")
 	if not glb:
 		return
 	var instance = glb.instantiate()
-	instance.scale = Vector3(mortar_scale, mortar_scale, mortar_scale)
-	instance.position = mortar_pos
+	instance.scale = Vector3(2.0, 2.0, 2.0)
+	instance.position = Vector3(0, 0, 0)
 	$Mortar/Mesh.visible = false
 	$Mortar.add_child(instance)
+	$Mortar.setup(instance)
 
 func _place_herb_model():
-	pass
+	var glb = load("res://models/herb_plant.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(2.0, 2.0, 2.0)
+	instance.position = Vector3(0, 0, 0)
+	$Herbs/Mesh.visible = false
+	$Herbs.add_child(instance)
+	_strip_collision(instance)
+	$Herbs.setup(instance)
 
 func _place_windows():
 	var glb = load("res://models/window2.glb")
@@ -169,6 +188,18 @@ func _place_windows():
 		win.rotation_degrees = Vector3(0, 180, 0)
 		_strip_collision(win)
 
+
+func _place_vial_model():
+	var glb = load("res://models/vial.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(2.0, 2.0, 2.0)
+	instance.position = Vector3(0, 0, 0)
+	$Vial/Mesh.visible = false
+	$Vial.add_child(instance)
+	_strip_collision(instance)
+	$Vial.setup(instance)
 
 func _place_customer():
 	var glb = load("res://models/Walking.glb")
@@ -227,6 +258,154 @@ func _place_door():
 	trigger.pivot = pivot
 	add_child(trigger)
 	trigger.global_position = Vector3(0.0, 0.0, 5.0)
+
+func _place_reading_table():
+	var glb = load("res://models/counter.glb")
+	if not glb:
+		return
+	# Body offset so GLB (at counter_pos) ends up centred at world (-4, 0, -3)
+	var body = StaticBody3D.new()
+	body.position = Vector3(-4.1, 0.5, -2.5)
+	add_child(body)
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(2.0, 1.0, 0.7)
+	col.shape = shape
+	body.add_child(col)
+	var instance = glb.instantiate()
+	var rt_scale = counter_scale * 1.05
+	instance.scale = Vector3(rt_scale, rt_scale, rt_scale)
+	instance.position = counter_pos
+	body.add_child(instance)
+	_place_books_on_table()
+
+func _place_books_on_table():
+	# Open book — upright in Godot, lay flat with Rx(-90)
+	var open_glb = load("res://models/medieval_open_book_1.glb")
+	if open_glb:
+		var book_body = StaticBody3D.new()
+		book_body.set_script(preload("res://scripts/open_book.gd"))
+		book_body.position = Vector3(-3.95, 1.15, -2.75)
+		add_child(book_body)
+		var col = CollisionShape3D.new()
+		var cshape = BoxShape3D.new()
+		cshape.size = Vector3(0.45, 0.08, 0.35)
+		col.shape = cshape
+		book_body.add_child(col)
+		var inst = open_glb.instantiate()
+		inst.scale = Vector3(0.28, 0.28, 0.28)
+		inst.rotation_degrees = Vector3(-90, 0, 0)
+		book_body.add_child(inst)
+		_strip_collision(inst)
+
+	# Book stack — already upright
+	var stack_glb = load("res://models/medieval_book_stack.glb")
+	if stack_glb:
+		var stack = stack_glb.instantiate()
+		stack.scale = Vector3(0.011, 0.011, 0.011)
+		stack.position = Vector3(-4.7, 1.15, -2.75)
+		add_child(stack)
+		_strip_collision(stack)
+
+func _place_bookcase():
+	var glb = load("res://models/medieval_bookcase.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(0.05, 0.05, 0.05)
+	instance.rotation_degrees = Vector3(0, 180, 0)
+	add_child(instance)
+	instance.global_position = Vector3(-4.0, 0.0, -1.6)
+	_strip_collision(instance)
+
+func _place_interior_wall():
+	var albedo = load("res://models/dark_log_wall__tile_texture_0.png")
+	var normal = load("res://models/dark_log_wall__tile_texture_2.png")
+	var roughness_tex = load("res://models/dark_log_wall__tile_texture_1.png")
+	var mat = StandardMaterial3D.new()
+	mat.albedo_texture = albedo
+	mat.normal_enabled = true
+	mat.normal_texture = normal
+	mat.roughness_texture = roughness_tex
+	mat.uv1_scale = Vector3(1.67, 2.5, 1)
+	mat.roughness = 1.0
+
+	var wall = StaticBody3D.new()
+	wall.position = Vector3(-4.0, 2.0, -1.5)
+	add_child(wall)
+
+	var mesh_inst = MeshInstance3D.new()
+	var box = BoxMesh.new()
+	box.size = Vector3(4.0, 4.0, 0.2)
+	mesh_inst.mesh = box
+	mesh_inst.material_override = mat
+	wall.add_child(mesh_inst)
+
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(4.0, 4.0, 0.2)
+	col.shape = shape
+	wall.add_child(col)
+
+func _place_forge():
+	var glb = load("res://models/forge.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(0.8, 0.8, 0.8)
+	instance.rotation_degrees = Vector3(0, -90, 0)
+	instance.position = Vector3(5.3, 0, 1.5)
+	add_child(instance)
+	_strip_collision(instance)
+
+	var pot_glb = load("res://models/boiling_pot_lightblue.glb")
+	if not pot_glb:
+		return
+	var pot = pot_glb.instantiate()
+	pot.scale = Vector3(0.6, 0.6, 0.6)
+	pot.rotation_degrees = Vector3(0, 270, 0)
+	pot.position = Vector3(4.35, 0.5, 1.5)
+	add_child(pot)
+	_strip_collision(pot)
+	_place_pot_trigger(pot)
+
+func _place_pot_trigger(visual_instance: Node):
+	$Pot.setup(visual_instance)
+
+func _place_window_table():
+	var glb = load("res://models/window_plant_table.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(2.0, 2.0, 2.0)
+	instance.position = Vector3(-3.525, 0, 4.35)
+	add_child(instance)
+	_strip_collision(instance)
+
+
+func _place_ingredient_rack():
+	var glb = load("res://models/ingredient_rack.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.3, 1.3, 1.3)
+	instance.rotation_degrees = Vector3(0, 270, 0)
+	# Local offset: $Rack body is at (5.0, 2.0, -1.0); GLB visual world target (5.5, 3.0, -1.0)
+	instance.position = Vector3(0.5, 1.0, 0.0)
+	$Rack.add_child(instance)
+	_strip_collision(instance)
+	$Rack.setup(instance)
+
+func _place_shelf():
+	var glb = load("res://models/alchemist_shelf.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(2.8, 2.8, 2.8)
+	instance.rotation_degrees = Vector3(0, 90, 0)
+	instance.position = Vector3(5.5, 0.65, -3.5)
+	add_child(instance)
+	_strip_collision(instance)
 
 func _strip_collision(node: Node):
 	if node is CollisionObject3D:

@@ -38,7 +38,7 @@ func _begin_entry():
 	if door_pivot and not door_pivot.is_open:
 		door_pivot.interact(null)
 	await get_tree().create_timer(1.5).timeout
-	_start_walking([Vector3(0, 0.9, 3.0), Vector3(0, 0.9, -2.5)], "entering")
+	_start_walking([Vector3(0, 0.9, 3.0), Vector3(0, 0.9, -0.8)], "entering")
 
 func _start_walking(waypoints: Array, mode: String):
 	_waypoints = waypoints
@@ -99,7 +99,7 @@ func _start_asking():
 	state = State.ASKING
 	if anim_player:
 		anim_player.stop()
-	_set_dialogue("Could I have a\nhealing potion please?")
+	_set_dialogue("Could I have a\nPlague Potion please?")
 
 func get_interact_label(_player = null) -> String:
 	if state == State.ASKING:
@@ -107,8 +107,13 @@ func get_interact_label(_player = null) -> String:
 	return ""
 
 func interact(player):
-	if state == State.ASKING and player.has_item_type("potion"):
-		player.remove_item_type("potion")
+	if state == State.ASKING and player.has_item_type("plague_potion"):
+		for item in player.held_items:
+			if item.get("item_type") == "plague_potion":
+				if item.has_method("reset_to_empty"):
+					item.reset_to_empty()
+				break
+		player._update_inventory_label()
 		_receive_potion(player)
 
 func _receive_potion(player):
