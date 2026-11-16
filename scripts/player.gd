@@ -12,11 +12,14 @@ const INTERACT_DISTANCE = 2.5
 @onready var inventory_label: Label = $HUD/InventoryLabel
 @onready var gold_label: Label = $HUD/GoldLabel
 @onready var crosshair: Label = $HUD/Crosshair
+@onready var seeds_label: Label = $HUD/SeedsLabel
 
 var held_items: Array = []
 var gold: int = 0
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var crafting_spots: Array = []
+var seeds: Dictionary = {"snake_plant": 5, "basil": 3, "aloe_vera": 3, "bee_balm": 3, "calendula": 3, "chamomile": 3}
+var _active_well = null  # set by well_node when bucket is in hand
 
 func register_crafting_spot(spot):
 	crafting_spots.append(spot)
@@ -30,6 +33,7 @@ func _get_nearby_crafting_spot():
 func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	update_gold_label()
+	_update_seeds_label()
 
 func _input(event):
 	if event is InputEventMouseMotion:
@@ -41,6 +45,10 @@ func _input(event):
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	if event is InputEventKey and event.pressed and not event.is_echo():
+		if event.keycode == KEY_F:
+			if _active_well and is_instance_valid(_active_well):
+				_active_well.pour(self)
 
 func _physics_process(delta):
 	if not is_on_floor():
@@ -60,6 +68,18 @@ func _physics_process(delta):
 
 func _check_interaction():
 	interact_label.text = ""
+	# Well bucket hints when carrying it
+	if _active_well and is_instance_valid(_active_well):
+		if interact_ray.is_colliding():
+			var col = interact_ray.get_collider()
+			if col.has_method("get_interact_label"):
+				interact_label.text = col.get_interact_label(self)
+				return
+		if _active_well.is_held_full():
+			interact_label.text = "Pour water [F]"
+		else:
+			interact_label.text = "Return to well to reattach [E]"
+		return
 	var crafting_spot = _get_nearby_crafting_spot()
 	if crafting_spot != null and crafting_spot._player_has_all_items(self):
 		interact_label.text = crafting_spot.get_interact_label(self)
@@ -101,8 +121,8 @@ func drop_all_items():
 		hand_position.remove_child(item)
 		get_parent().add_child(item)
 		item.global_position = global_position + Vector3(0, 0.5, 0)
-		item.collision_layer = 1
-		item.collision_mask = 1
+		item.collision_layer = 2
+		item.collision_mask = 0
 	held_items.clear()
 	_update_inventory_label()
 
@@ -121,6 +141,17 @@ func remove_item_type(type_name: String):
 			item.queue_free()
 			break
 	_update_inventory_label()
+
+func add_seed(seed_type: String, amount: int = 1):
+	seeds[seed_type] = seeds.get(seed_type, 0) + amount
+	_update_seeds_label()
+
+func _update_seeds_label():
+	var parts = []
+	for type in seeds:
+		if seeds[type] > 0:
+			parts.append("%s x%d" % [type.replace("_", " ").capitalize(), seeds[type]])
+	seeds_label.text = "Seeds: " + (", ".join(parts) if not parts.is_empty() else "none")
 
 func add_gold(amount: int):
 	gold += amount

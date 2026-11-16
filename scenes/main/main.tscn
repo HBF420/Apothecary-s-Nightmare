@@ -91,7 +91,13 @@ albedo_color = Color(0.6, 0.6, 0.6, 1)
 roughness = 0.8
 
 [sub_resource type="SphereShape3D" id="item_shape"]
-radius = 0.12
+radius = 0.25
+
+[sub_resource type="SphereShape3D" id="mortar_col_shape"]
+radius = 0.17
+
+[sub_resource type="SphereShape3D" id="vial_col_shape"]
+radius = 0.15
 
 [sub_resource type="SphereMesh" id="item_mesh_herbs"]
 radius = 0.12
@@ -177,13 +183,13 @@ size = Vector3(0.2, 0.65, 2.1)
 size = Vector3(0.2, 3.35, 2.1)
 
 [sub_resource type="BoxShape3D" id="pot_shape"]
-size = Vector3(0.5, 0.4, 0.5)
+size = Vector3(0.8, 0.6, 0.8)
 
 [sub_resource type="BoxShape3D" id="mortar_slot_shape"]
-size = Vector3(0.3, 0.1, 0.3)
+size = Vector3(0.6, 0.4, 0.6)
 
 [sub_resource type="BoxShape3D" id="vial_slot_shape"]
-size = Vector3(0.15, 0.2, 0.15)
+size = Vector3(0.5, 0.4, 0.5)
 
 [node name="Main" type="Node3D" unique_id=1059509725]
 script = ExtResource("0_main")
@@ -300,35 +306,45 @@ script = ExtResource("3_craft")
 [node name="Mortar" type="StaticBody3D" parent="." unique_id=1970517003]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.05, -3.4)
 script = ExtResource("7_mortar_item")
+collision_layer = 2
+collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Mortar" unique_id=1241904331]
 mesh = SubResource("item_mesh_mortar")
 surface_material_override/0 = SubResource("mortar_mat")
 
 [node name="Col" type="CollisionShape3D" parent="Mortar" unique_id=1850874912]
-shape = SubResource("item_shape")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
+shape = SubResource("mortar_col_shape")
 
 [node name="Herbs" type="StaticBody3D" parent="." unique_id=1774008127]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.525, 1.1, 4.35)
 script = ExtResource("5_herb_plant")
+collision_layer = 2
+collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Herbs" unique_id=169473793]
 mesh = SubResource("item_mesh_herbs")
 surface_material_override/0 = SubResource("herbs_mat")
+visible = false
 
 [node name="Col" type="CollisionShape3D" parent="Herbs" unique_id=722221792]
 shape = SubResource("item_shape")
+disabled = true
 
 [node name="Vial" type="StaticBody3D" parent="." unique_id=2083284059]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.05, -2.8)
 script = ExtResource("9_vial_item")
+collision_layer = 2
+collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="Vial" unique_id=1719933796]
 mesh = SubResource("item_mesh_vial")
 surface_material_override/0 = SubResource("vial_mat")
 
 [node name="Col" type="CollisionShape3D" parent="Vial" unique_id=2059170858]
-shape = SubResource("item_shape")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.27, 0)
+shape = SubResource("vial_col_shape")
 
 [node name="Pot" type="StaticBody3D" parent="." unique_id=2100000001]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.35, 0.75, 1.5)
@@ -337,6 +353,7 @@ collision_layer = 2
 collision_mask = 0
 
 [node name="Col" type="CollisionShape3D" parent="Pot" unique_id=2100000002]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 shape = SubResource("pot_shape")
 
 [node name="MortarSlot" type="StaticBody3D" parent="." unique_id=2100000003]
@@ -371,6 +388,7 @@ shape = SubResource("rack_shape")
 [node name="Customer" type="CharacterBody3D" parent="." unique_id=98178390]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -4.5)
 script = ExtResource("4_customer")
+collision_layer = 3
 
 [node name="Mesh" type="MeshInstance3D" parent="Customer" unique_id=1470565380]
 mesh = SubResource("customer_mesh")
@@ -402,7 +420,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, -0.2, -0.4)
 
 [node name="InteractRay" type="RayCast3D" parent="Player/Head/Camera3D" unique_id=2061089382]
-target_position = Vector3(0, 0, -2.5)
+target_position = Vector3(0, 0, -3.0)
+collision_mask = 2
 collision_mask = 3
 
 [node name="HUD" type="CanvasLayer" parent="Player" unique_id=497556278]
@@ -439,6 +458,12 @@ offset_right = -20.0
 offset_bottom = 60.0
 text = "Gold: 0"
 horizontal_alignment = 2
+
+[node name="SeedsLabel" type="Label" parent="Player/HUD" unique_id=1706493730]
+offset_left = 10.0
+offset_top = 90.0
+offset_right = 400.0
+offset_bottom = 115.0
 
 [node name="Crosshair" type="Label" parent="Player/HUD" unique_id=1706493729]
 anchors_preset = 8

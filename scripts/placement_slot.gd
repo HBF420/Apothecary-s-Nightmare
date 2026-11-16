@@ -17,7 +17,7 @@ func interact(player):
 			player.hand_position.remove_child(item)
 			get_parent().add_child(item)
 			item.global_position = global_position
-			item.collision_layer = 1
-			item.collision_mask = 1
+			item.collision_layer = 2
+			item.collision_mask = 0
 			player._update_inventory_label()
 			return
