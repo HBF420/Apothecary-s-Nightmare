@@ -1,0 +1,67 @@
+{
+  "reference_file": "grim-medieval-corner-house.glb",
+  "reference_library_file_id": "libfile_9d4980d39380819195c3582431b29141",
+  "reference_version": 1,
+  "textures": [
+    {
+      "image_index": 0,
+      "image_name": "merchant-grit",
+      "file": "res://shared_medieval/textures/merchant-grit-a884f845bd25.png",
+      "sha256": "a884f845bd25fd512b399b632638dd44b5e72d2bb446b1e6592115a069af1953"
+    },
+    {
+      "image_index": 1,
+      "image_name": "grim-plaster",
+      "file": "res://shared_medieval/textures/grim-plaster-5daf54da9a69.jpg",
+      "sha256": "5daf54da9a693aeffc174678eeb9c5cac4053ae3a1b7997868b15b087207c6ea"
+    },
+    {
+      "image_index": 2,
+      "image_name": "workbench-grain",
+      "file": "res://shared_medieval/textures/workbench-grain-ed9aa4387ff3.png",
+      "sha256": "ed9aa4387ff3a0987582d0992c2d707f705ad3bfec97681bcc9bc59373b6346d"
+    },
+    {
+      "image_index": 3,
+      "image_name": "grim-timber",
+      "file": "res://shared_medieval/textures/grim-timber-953cd5d14c22.jpg",
+      "sha256": "953cd5d14c229a6f253cfb8f6728fc546c59ba8b47935956bfb645cf602873fc"
+    },
+    {
+      "image_index": 4,
+      "image_name": "grim-stone",
+      "file": "res://shared_medieval/textures/grim-stone-12be44dd2865.jpg",
+      "sha256": "12be44dd2865bc423fe600b1fc6b00afd857c37099f96b0faeaa94f34a6047fe"
+    },
+    {
+      "image_index": 5,
+      "image_name": "grim-roof-0",
+      "file": "res://shared_medieval/textures/grim-roof-0-0948c7b8760d.jpg",
+      "sha256": "0948c7b8760d6df04cf5e49a22211bae43442d015ab62a01d631d5d78ae06856"
+    },
+    {
+      "image_index": 6,
+      "image_name": "grim-roof-1",
+      "file": "res://shared_medieval/textures/grim-roof-1-44d428ae2116.jpg",
+      "sha256": "44d428ae211645b4f243e566034ed5a7a11a80b93ae57c1f7f1f052363a1d305"
+    },
+    {
+      "image_index": 7,
+      "image_name": "grim-roof-2",
+      "file": "res://shared_medieval/textures/grim-roof-2-7697d5d07739.jpg",
+      "sha256": "7697d5d07739d54ecfbfc58758015357c9c31db79605f6a99f85398e924383f9"
+    },
+    {
+      "image_index": 8,
+      "image_name": "grim-roof-3",
+      "file": "res://shared_medieval/textures/grim-roof-3-05df6286727c.jpg",
+      "sha256": "05df6286727c8c56f08871863ca5dc068df3d59d0f3943f169138a10693d3d40"
+    },
+    {
+      "image_index": 9,
+      "image_name": "Four-wall weathered limestone courses",
+      "file": "res://shared_medieval/textures/four-wall-weathered-limestone-courses-d7760a99f11a.png",
+      "sha256": "d7760a99f11a716c99dda391a79b75880231d5921ccecbbd846cdad741afd377"
+    }
+  ]
+}

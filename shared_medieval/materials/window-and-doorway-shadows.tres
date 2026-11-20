@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" load_steps=1 format=3]
+
+
+[resource]
+resource_name = "Window and doorway shadows"
+albedo_color = Color(0.023000000044703484, 0.01600000075995922, 0.010999999940395355, 1)
+metallic = 0
+roughness = 0.8700000047683716
+texture_filter = 3
+cull_mode = 2

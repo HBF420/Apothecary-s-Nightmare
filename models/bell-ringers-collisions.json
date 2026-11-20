@@ -1,0 +1,54 @@
+[
+  {
+    "name": "Textured stone ground floor",
+    "position": [
+      0,
+      1.65,
+      -0.35
+    ],
+    "size": [
+      9.2,
+      3.3,
+      6.3
+    ]
+  },
+  {
+    "name": "Overhanging plaster upper storey",
+    "position": [
+      0,
+      5.15,
+      0
+    ],
+    "size": [
+      10,
+      3.7,
+      7.0
+    ]
+  },
+  {
+    "name": "Entrance step",
+    "position": [
+      0,
+      0.01,
+      3.4
+    ],
+    "size": [
+      3.6,
+      0.12,
+      1.4
+    ]
+  },
+  {
+    "name": "Turret seat",
+    "position": [
+      2.2,
+      10.05,
+      0.8
+    ],
+    "size": [
+      1.36,
+      0.3,
+      1.36
+    ]
+  }
+]

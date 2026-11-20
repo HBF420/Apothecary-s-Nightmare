@@ -1,0 +1,28 @@
+[
+  {
+    "name": "Closed main house",
+    "position": [
+      0,
+      3.35,
+      0
+    ],
+    "size": [
+      6.65,
+      6.7,
+      6.45
+    ]
+  },
+  {
+    "name": "Closed side tower",
+    "position": [
+      -4.2,
+      3.85,
+      -0.9
+    ],
+    "size": [
+      1.85,
+      7.7,
+      2.5
+    ]
+  }
+]

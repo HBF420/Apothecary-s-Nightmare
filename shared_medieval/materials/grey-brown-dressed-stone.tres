@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://shared_medieval/textures/grim-stone-12be44dd2865.jpg" id="1"]
+[ext_resource type="Texture2D" path="res://shared_medieval/textures/merchant-grit-a884f845bd25.png" id="2"]
+
+[resource]
+resource_name = "Grey-brown dressed stone"
+albedo_color = Color(1, 1, 1, 1)
+metallic = 0
+roughness = 0.8799999952316284
+texture_filter = 3
+cull_mode = 2
+normal_enabled = true
+normal_scale = 0.38999998569488525
+albedo_texture = ExtResource("1")
+normal_texture = ExtResource("2")

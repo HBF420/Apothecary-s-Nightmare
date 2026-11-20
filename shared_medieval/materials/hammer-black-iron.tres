@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" load_steps=1 format=3]
+
+
+[resource]
+resource_name = "Hammer-black iron"
+albedo_color = Color(0.05900000035762787, 0.04699999839067459, 0.032999999821186066, 1)
+metallic = 0.7099999785423279
+roughness = 0.41999998688697815
+texture_filter = 3
+cull_mode = 2

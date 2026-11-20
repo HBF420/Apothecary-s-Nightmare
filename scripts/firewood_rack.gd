@@ -22,12 +22,16 @@ func prompt() -> String:
 func interact(hand: Node3D) -> Node3D:
 	if hand == null or not hand.is_inside_tree() or _logs.is_empty():
 		return null
+	var held_count := 0
 	for item in hand.get_children():
 		if item.is_in_group("held_firewood"):
-			return null
+			held_count += 1
+	if held_count >= 3:
+		return null
+	var offsets := [Vector3(0, 0, 0), Vector3(0.03, 0.03, 0), Vector3(-0.03, 0.06, 0)]
 	var piece: Node3D = _logs.pop_back()
 	piece.reparent(hand, false)
-	piece.position = held_position
+	piece.position = held_position + offsets[held_count]
 	piece.rotation_degrees = held_rotation_degrees
 	piece.add_to_group("held_firewood")
 	log_taken.emit(piece, remaining_count())

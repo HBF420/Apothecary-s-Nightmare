@@ -1,7 +1,10 @@
 extends CharacterBody3D
 
-const SPEED = 4.0
+const SPEED = 3.0
+const RUN_SPEED = 5.0
 const MOUSE_SENSITIVITY = 0.002
+const BOB_FREQ = 0.6
+const BOB_AMP = 0.003
 const INTERACT_DISTANCE = 2.5
 
 @onready var head: Node3D = $Head
@@ -15,11 +18,22 @@ const INTERACT_DISTANCE = 2.5
 @onready var seeds_label: Label = $HUD/SeedsLabel
 
 var held_items: Array = []
+var _bob_time: float = 0.0
+var _last_step: int = 0
+var _footstep_player: AudioStreamPlayer = null
+var _footstep_wood: AudioStream = null
+var _footstep_stone: AudioStream = null
 var gold: int = 0
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var crafting_spots: Array = []
 var seeds: Dictionary = {"snake_plant": 5, "basil": 3, "aloe_vera": 3, "bee_balm": 3, "calendula": 3, "chamomile": 3}
-var _active_well = null  # set by well_node when bucket is in hand
+var _active_well = null   # set by well_node when bucket is in hand
+var _active_forge = null  # set by forge_trigger when pot is in hand
+var _carried_body = null
+var _last_hovered = null  # tracks ingredient braid under crosshair for highlight
+var reputation: int = 0
+var reputation_label: Label = null
+var has_prayed_today: bool = false
 
 func register_crafting_spot(spot):
 	crafting_spots.append(spot)
@@ -34,6 +48,19 @@ func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	update_gold_label()
 	_update_seeds_label()
+	var rl = Label.new()
+	rl.anchor_left = 1.0; rl.anchor_right = 1.0
+	rl.offset_left = -200.0; rl.offset_top = 65.0
+	rl.offset_right = -20.0; rl.offset_bottom = 100.0
+	rl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	$HUD.add_child(rl)
+	reputation_label = rl
+	update_reputation_label()
+	_footstep_wood  = load("res://sounds/medieval-wood-floor-footstep-3.wav")
+	_footstep_stone = load("res://sounds/medieval-stone-street-footstep-2.wav")
+	_footstep_player = AudioStreamPlayer.new()
+	_footstep_player.volume_db = -6.0
+	add_child(_footstep_player)
 
 func _input(event):
 	if event is InputEventMouseMotion:
@@ -49,25 +76,81 @@ func _input(event):
 		if event.keycode == KEY_F:
 			if _active_well and is_instance_valid(_active_well):
 				_active_well.pour(self)
+			elif interact_ray.is_colliding():
+				var col = interact_ray.get_collider()
+				if col.has_method("secondary_interact"):
+					col.secondary_interact(self)
+		elif event.keycode == KEY_G:
+			if interact_ray.is_colliding():
+				var col = interact_ray.get_collider()
+				if col.has_method("tertiary_interact"):
+					col.tertiary_interact(self)
 
 func _physics_process(delta):
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
+	var speed = RUN_SPEED if Input.is_key_pressed(KEY_SHIFT) else SPEED
 	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	if direction:
-		velocity.x = direction.x * SPEED
-		velocity.z = direction.z * SPEED
+		velocity.x = direction.x * speed
+		velocity.z = direction.z * speed
 	else:
-		velocity.x = move_toward(velocity.x, 0, SPEED)
-		velocity.z = move_toward(velocity.z, 0, SPEED)
+		velocity.x = move_toward(velocity.x, 0, speed)
+		velocity.z = move_toward(velocity.z, 0, speed)
 
 	move_and_slide()
 	_check_interaction()
+	_update_head_bob(delta)
+
+func _update_head_bob(delta: float):
+	var horizontal_speed = Vector2(velocity.x, velocity.z).length()
+	if horizontal_speed > 0.1 and is_on_floor():
+		_bob_time += delta * horizontal_speed * BOB_FREQ
+		camera.position.y = sin(_bob_time * TAU) * BOB_AMP
+		# Play a footstep once per full bob cycle
+		var step = int(_bob_time)
+		if step != _last_step:
+			_last_step = step
+			if _footstep_player and not _footstep_player.playing:
+				var outdoors = global_position.z > 5.0
+				_footstep_player.stream = _footstep_stone if outdoors else _footstep_wood
+				_footstep_player.volume_db = -12.0 if outdoors else -6.0
+				_footstep_player.play()
+	else:
+		camera.position.y = lerp(camera.position.y, 0.0, delta * 10.0)
 
 func _check_interaction():
 	interact_label.text = ""
+
+	# ── Ingredient hover highlight ──────────────────────────────────────────
+	var hovered_now = null
+	if interact_ray.is_colliding():
+		var c = interact_ray.get_collider()
+		if c.has_method("set_hover"):
+			hovered_now = c
+	if hovered_now != _last_hovered:
+		if _last_hovered != null and is_instance_valid(_last_hovered):
+			_last_hovered.set_hover(false)
+		if hovered_now != null:
+			hovered_now.set_hover(true)
+		_last_hovered = hovered_now
+	# ───────────────────────────────────────────────────────────────────────
+
+	# Body carry hint
+	if _carried_body != null:
+		if _get_coffin_cart_in_range():
+			interact_label.text = "Drop body [E]"
+			return
+		# Still show door labels while carrying
+		if interact_ray.is_colliding():
+			var col = interact_ray.get_collider()
+			if col.has_method("get_interact_label"):
+				interact_label.text = col.get_interact_label(self)
+				return
+		interact_label.text = "Take body to undertaker's cart"
+		return
 	# Well bucket hints when carrying it
 	if _active_well and is_instance_valid(_active_well):
 		if interact_ray.is_colliding():
@@ -80,6 +163,16 @@ func _check_interaction():
 		else:
 			interact_label.text = "Return to well to reattach [E]"
 		return
+	# Forge pot hints when carrying it
+	if _active_forge and is_instance_valid(_active_forge):
+		if interact_ray.is_colliding():
+			var col = interact_ray.get_collider()
+			if col.has_method("get_interact_label"):
+				interact_label.text = col.get_interact_label(self)
+				return
+		interact_label.text = "Return to forge to hang pot [E]"
+		return
+
 	var crafting_spot = _get_nearby_crafting_spot()
 	if crafting_spot != null and crafting_spot._player_has_all_items(self):
 		interact_label.text = crafting_spot.get_interact_label(self)
@@ -87,6 +180,14 @@ func _check_interaction():
 		var collider = interact_ray.get_collider()
 		if collider.has_method("get_interact_label"):
 			interact_label.text = collider.get_interact_label(self)
+		if collider.has_method("get_secondary_label"):
+			var sec = collider.get_secondary_label(self)
+			if sec != "":
+				interact_label.text += "\n" + sec
+		if collider.has_method("get_tertiary_label"):
+			var tert = collider.get_tertiary_label(self)
+			if tert != "":
+				interact_label.text += "\n" + tert
 	elif crafting_spot != null:
 		interact_label.text = crafting_spot.get_interact_label(self)
 
@@ -98,6 +199,17 @@ func _process(_delta):
 			_try_interact()
 
 func _try_interact():
+	if _carried_body != null:
+		var cart = _get_nearby_coffin_cart()
+		if cart:
+			_place_body_on_cart(cart)
+			return
+		# Allow door interactions while carrying
+		if interact_ray.is_colliding():
+			var col = interact_ray.get_collider()
+			if col.has_method("interact"):
+				col.interact(self)
+		return
 	var crafting_spot = _get_nearby_crafting_spot()
 	if crafting_spot != null and crafting_spot._player_has_all_items(self):
 		crafting_spot.interact(self)
@@ -105,6 +217,15 @@ func _try_interact():
 		var collider = interact_ray.get_collider()
 		if collider.has_method("interact"):
 			collider.interact(self)
+
+func _start_carrying_body(body):
+	_carried_body = body
+	interact_label.text = "Drop body [E]"
+
+func _drop_body():
+	if _carried_body and is_instance_valid(_carried_body):
+		_carried_body._be_dropped()
+	_carried_body = null
 
 func pick_up_item(item):
 	held_items.append(item)
@@ -160,6 +281,24 @@ func add_gold(amount: int):
 func update_gold_label():
 	gold_label.text = "Gold: %d" % gold
 
+func _get_coffin_cart_in_range() -> Node:
+	for cart in get_tree().get_nodes_in_group("coffin_cart"):
+		if cart.global_position.distance_to(global_position) <= 3.0:
+			return cart
+	return null
+
+func _get_nearby_coffin_cart() -> Node:
+	for cart in get_tree().get_nodes_in_group("coffin_cart"):
+		if cart.global_position.distance_to(global_position) <= 3.0:
+			if cart.can_drop(self):
+				return cart
+	return null
+
+func _place_body_on_cart(cart: Node):
+	if _carried_body and is_instance_valid(_carried_body):
+		_carried_body._place_on_cart(cart)
+	_carried_body = null
+
 func _update_inventory_label():
 	if held_items.is_empty():
 		inventory_label.text = ""
@@ -168,3 +307,25 @@ func _update_inventory_label():
 		for item in held_items:
 			names.append(item.item_type)
 		inventory_label.text = "Holding: " + ", ".join(names)
+
+func add_reputation(amount: int):
+	reputation += amount
+	update_reputation_label()
+
+func update_reputation_label():
+	if reputation_label:
+		reputation_label.text = "Reputation: %d" % reputation
+
+func on_sleep() -> void:
+	has_prayed_today = false
+
+func get_rep_tier() -> int:
+	if reputation >= 1500:
+		return 5
+	elif reputation >= 700:
+		return 4
+	elif reputation >= 300:
+		return 3
+	elif reputation >= 100:
+		return 2
+	return 1

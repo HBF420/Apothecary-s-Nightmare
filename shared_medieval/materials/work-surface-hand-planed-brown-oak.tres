@@ -1,0 +1,16 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://shared_medieval/textures/grim-timber-953cd5d14c22.jpg" id="1"]
+[ext_resource type="Texture2D" path="res://shared_medieval/textures/workbench-grain-ed9aa4387ff3.png" id="2"]
+
+[resource]
+resource_name = "Work surface | hand-planed brown oak"
+albedo_color = Color(1, 1, 1, 1)
+metallic = 0
+roughness = 0.5699999928474426
+texture_filter = 3
+cull_mode = 2
+normal_enabled = true
+normal_scale = 0.20000000298023224
+albedo_texture = ExtResource("1")
+normal_texture = ExtResource("2")

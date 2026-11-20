@@ -1,0 +1,28 @@
+[
+  {
+    "name": "Closed church nave",
+    "position": [
+      0,
+      2.5,
+      0
+    ],
+    "size": [
+      6.6,
+      5,
+      8.4
+    ]
+  },
+  {
+    "name": "Tower lower solid",
+    "position": [
+      -2.14,
+      3.55,
+      3.37
+    ],
+    "size": [
+      2.18,
+      7.1,
+      2.18
+    ]
+  }
+]

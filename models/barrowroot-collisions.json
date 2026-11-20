@@ -1,0 +1,327 @@
+[
+  {
+    "name": "Solid canopy post",
+    "position": [
+      -3.6,
+      1.72,
+      4.68
+    ],
+    "size": [
+      0.17,
+      3.18,
+      0.17
+    ]
+  },
+  {
+    "name": "Solid canopy post",
+    "position": [
+      1.42,
+      1.72,
+      4.68
+    ],
+    "size": [
+      0.17,
+      3.18,
+      0.17
+    ]
+  },
+  {
+    "name": "Stall bin",
+    "position": [
+      -2.7,
+      0.64,
+      5.18
+    ],
+    "size": [
+      1.25,
+      1.28,
+      0.95
+    ]
+  },
+  {
+    "name": "Stall bin",
+    "position": [
+      -1.15,
+      0.64,
+      5.18
+    ],
+    "size": [
+      1.25,
+      1.28,
+      0.95
+    ]
+  },
+  {
+    "name": "Stall bin",
+    "position": [
+      0.4,
+      0.64,
+      5.18
+    ],
+    "size": [
+      1.25,
+      1.28,
+      0.95
+    ]
+  },
+  {
+    "name": "Main shop floor",
+    "position": [
+      -0.8,
+      0.015,
+      0
+    ],
+    "size": [
+      5.8,
+      0.13,
+      5.82
+    ]
+  },
+  {
+    "name": "Entry hall floor",
+    "position": [
+      3.3,
+      0.015,
+      0
+    ],
+    "size": [
+      1.8,
+      0.13,
+      5.82
+    ]
+  },
+  {
+    "name": "Connection floor",
+    "position": [
+      2.4,
+      0.015,
+      1.45
+    ],
+    "size": [
+      1.0,
+      0.13,
+      2.15
+    ]
+  },
+  {
+    "name": "Main west wall",
+    "position": [
+      -3.9,
+      1.35,
+      0
+    ],
+    "size": [
+      0.4,
+      2.7,
+      6.4
+    ]
+  },
+  {
+    "name": "Main front rear wall",
+    "position": [
+      -0.8,
+      1.35,
+      -3.07
+    ],
+    "size": [
+      6.4,
+      2.7,
+      0.34
+    ]
+  },
+  {
+    "name": "Main front rear wall",
+    "position": [
+      -0.8,
+      1.35,
+      3.07
+    ],
+    "size": [
+      6.4,
+      2.7,
+      0.34
+    ]
+  },
+  {
+    "name": "Passage side solid",
+    "position": [
+      2.4,
+      1.35,
+      -1.3875
+    ],
+    "size": [
+      0.68,
+      2.7,
+      3.525
+    ]
+  },
+  {
+    "name": "Passage side solid",
+    "position": [
+      2.4,
+      1.35,
+      2.8375
+    ],
+    "size": [
+      0.68,
+      2.7,
+      0.625
+    ]
+  },
+  {
+    "name": "Passage header",
+    "position": [
+      2.4,
+      2.62,
+      1.45
+    ],
+    "size": [
+      0.68,
+      0.2,
+      2.15
+    ]
+  },
+  {
+    "name": "Wing east wall",
+    "position": [
+      4.1,
+      1.5,
+      0
+    ],
+    "size": [
+      0.3,
+      3,
+      6.4
+    ]
+  },
+  {
+    "name": "Wing rear wall",
+    "position": [
+      3.3,
+      1.5,
+      -3.08
+    ],
+    "size": [
+      1.8,
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "Entrance side jamb",
+    "position": [
+      2.505,
+      1.5,
+      3.15
+    ],
+    "size": [
+      0.20999999999999996,
+      3,
+      0.4
+    ]
+  },
+  {
+    "name": "Entrance side jamb",
+    "position": [
+      4.095000000000001,
+      1.5,
+      3.15
+    ],
+    "size": [
+      0.20999999999999996,
+      3,
+      0.4
+    ]
+  },
+  {
+    "name": "Entrance arch header",
+    "position": [
+      3.3,
+      2.82,
+      3.15
+    ],
+    "size": [
+      1.38,
+      0.48,
+      0.4
+    ]
+  },
+  {
+    "name": "Closed counter front",
+    "position": [
+      -1.575,
+      0.56,
+      -0.755
+    ],
+    "size": [
+      4.15,
+      1.1,
+      0.46
+    ]
+  },
+  {
+    "name": "Closed counter right return",
+    "position": [
+      1.66,
+      0.56,
+      -1.8
+    ],
+    "size": [
+      0.42,
+      1.1,
+      2.1
+    ]
+  },
+  {
+    "name": "Doorway threshold floor",
+    "position": [
+      3.3,
+      0.015,
+      3.12
+    ],
+    "size": [
+      1.36,
+      0.13,
+      0.56
+    ]
+  },
+  {
+    "name": "Shop ceiling",
+    "position": [
+      -0.8,
+      2.68,
+      0
+    ],
+    "size": [
+      5.8,
+      0.18,
+      5.82
+    ]
+  },
+  {
+    "name": "Rear stock shelving",
+    "position": [
+      -1.1,
+      1.15,
+      -2.6
+    ],
+    "size": [
+      3.85,
+      2.3,
+      0.45
+    ]
+  },
+  {
+    "name": "Left customer shelf",
+    "position": [
+      -3.32,
+      1.15,
+      1.4
+    ],
+    "size": [
+      0.6,
+      2.3,
+      0.45
+    ]
+  }
+]

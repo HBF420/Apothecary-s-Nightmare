@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b86mrp4o8c841"
-path="res://.godot/imported/medieval-twin-chimney-house_grim-roof-3.jpg-9714350ee2abd44f68f0125385d93316.ctex"
+path.s3tc="res://.godot/imported/medieval-twin-chimney-house_grim-roof-3.jpg-9714350ee2abd44f68f0125385d93316.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "7f7fe5433b5e6bc3acabe9775a0fafe6"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://models/medieval-twin-chimney-house_grim-roof-3.jpg"
-dest_files=["res://.godot/imported/medieval-twin-chimney-house_grim-roof-3.jpg-9714350ee2abd44f68f0125385d93316.ctex"]
+dest_files=["res://.godot/imported/medieval-twin-chimney-house_grim-roof-3.jpg-9714350ee2abd44f68f0125385d93316.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

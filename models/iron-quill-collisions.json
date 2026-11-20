@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Closed full-width stone ground floor",
+    "position": [
+      0,
+      1.7,
+      0
+    ],
+    "size": [
+      6.8,
+      3.4,
+      6.2
+    ]
+  },
+  {
+    "name": "Closed textured upper walls",
+    "position": [
+      0,
+      5.6,
+      0
+    ],
+    "size": [
+      6.8,
+      4.4,
+      6.2
+    ]
+  },
+  {
+    "name": "Closed projecting upper gallery",
+    "position": [
+      0,
+      5.08,
+      3.27
+    ],
+    "size": [
+      6.1,
+      2.57,
+      0.68
+    ]
+  },
+  {
+    "name": "Porch stone slab",
+    "position": [
+      1.88,
+      0.015,
+      4.0
+    ],
+    "size": [
+      2.44,
+      0.13,
+      2.1
+    ]
+  },
+  {
+    "name": "Closed rear annex",
+    "position": [
+      1.9,
+      1.15,
+      -4.1
+    ],
+    "size": [
+      2.8,
+      2.3,
+      2.0
+    ]
+  }
+]

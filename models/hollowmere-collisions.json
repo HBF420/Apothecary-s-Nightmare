@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Main closed building",
+    "position": [
+      0,
+      2.9,
+      0
+    ],
+    "size": [
+      8.9,
+      5.8,
+      6.45
+    ]
+  },
+  {
+    "name": "Closed projecting bay",
+    "position": [
+      0,
+      4.33,
+      3.64
+    ],
+    "size": [
+      3.25,
+      3.08,
+      0.82
+    ]
+  },
+  {
+    "name": "Solid passage post",
+    "position": [
+      6.03,
+      1.65,
+      -2.6
+    ],
+    "size": [
+      0.23,
+      3,
+      0.23
+    ]
+  },
+  {
+    "name": "Solid passage post",
+    "position": [
+      6.03,
+      1.65,
+      0
+    ],
+    "size": [
+      0.23,
+      3,
+      0.23
+    ]
+  },
+  {
+    "name": "Solid passage post",
+    "position": [
+      6.03,
+      1.65,
+      2.6
+    ],
+    "size": [
+      0.23,
+      3,
+      0.23
+    ]
+  }
+]

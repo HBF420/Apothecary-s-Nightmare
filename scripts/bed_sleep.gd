@@ -25,6 +25,8 @@ func interact(_player):
 	tween.tween_property(rect, "color", Color(0, 0, 0, 1), 1.0)
 	tween.tween_callback(func():
 		get_tree().call_group("planter_pot", "on_sleep")
+		get_tree().call_group("forge_station", "on_sleep")
+		get_tree().call_group("player", "on_sleep")
 	)
 	tween.tween_interval(0.5)
 	tween.tween_property(rect, "color", Color(0, 0, 0, 0), 1.0)

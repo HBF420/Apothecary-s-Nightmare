@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" load_steps=1 format=3]
+
+
+[resource]
+resource_name = "Old smoky amber glazing"
+albedo_color = Color(0.07500000298023224, 0.06499999761581421, 0.04500000178813934, 1)
+metallic = 0.2199999988079071
+roughness = 0.2800000011920929
+texture_filter = 3
+cull_mode = 2

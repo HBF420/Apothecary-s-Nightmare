@@ -55,6 +55,12 @@ func interact(player):
 			elif not watered and _player_has_full_cup(player):
 				_water(player)
 
+func start_mature(seed_type: String) -> void:
+	_seed_type = seed_type
+	state = State.MATURE
+	watered = true
+	_update_plant_visual()
+
 func plant_seed(seed_type: String, player):
 	if player.seeds.has(seed_type) and player.seeds[seed_type] > 0:
 		player.seeds[seed_type] -= 1
@@ -73,8 +79,12 @@ func on_sleep():
 		missed_water_count += 1
 		if missed_water_count >= 2:
 			# Mature plants dry up visibly; younger plants just wither away
-			state = State.DEAD if state == State.MATURE else State.EMPTY
-			_seed_type = ""
+			if state == State.MATURE:
+				state = State.DEAD
+				# keep _seed_type so DriedUp visual loads the right GLB
+			else:
+				state = State.EMPTY
+				_seed_type = ""
 			_update_plant_visual()
 	watered = false
 
@@ -114,7 +124,7 @@ func _harvest(player):
 
 	var col = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(0.05, 0.3, 0.02)
+	shape.size = Vector3(0.15, 0.3, 0.12)
 	col.shape = shape
 	leaf.add_child(col)
 
@@ -227,3 +237,47 @@ func _open_seed_menu(player):
 	menu.pot = self
 	menu.player = player
 	get_tree().root.add_child(menu)
+
+static var _outline_mat: ShaderMaterial = null
+var _hover_meshes: Array = []
+
+func _get_outline_mat() -> ShaderMaterial:
+	if _outline_mat:
+		return _outline_mat
+	var shader = Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_front, unshaded;
+void vertex() { VERTEX += NORMAL * 0.004; }
+void fragment() { ALBEDO = vec3(1.0, 0.85, 0.3); }
+"""
+	_outline_mat = ShaderMaterial.new()
+	_outline_mat.shader = shader
+	return _outline_mat
+
+func set_hover(val: bool) -> void:
+	if val:
+		_hover_meshes.clear()
+		_collect_hover_meshes(self)
+	for mi in _hover_meshes:
+		if not is_instance_valid(mi):
+			continue
+		if val:
+			if mi.material_override == null:
+				var src = mi.get_active_material(0)
+				if src != null:
+					var dup = src.duplicate() as Material
+					dup.next_pass = _get_outline_mat()
+					mi.material_override = dup
+		else:
+			if mi.material_override != null:
+				mi.material_override.next_pass = null
+			mi.material_override = null
+	if not val:
+		_hover_meshes.clear()
+
+func _collect_hover_meshes(node: Node) -> void:
+	if node is MeshInstance3D:
+		_hover_meshes.append(node)
+	for child in node.get_children():
+		_collect_hover_meshes(child)

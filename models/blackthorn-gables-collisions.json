@@ -1,0 +1,41 @@
+[
+  {
+    "name": "Closed ground storey",
+    "position": [
+      0,
+      1.4,
+      0
+    ],
+    "size": [
+      7.6,
+      2.8,
+      6.4
+    ]
+  },
+  {
+    "name": "Closed upper storey",
+    "position": [
+      0,
+      4.75,
+      0
+    ],
+    "size": [
+      7.96,
+      3.9,
+      6.76
+    ]
+  },
+  {
+    "name": "Closed rear annex",
+    "position": [
+      -1.55,
+      1.35,
+      -4.13
+    ],
+    "size": [
+      3.25,
+      2.7,
+      1.86
+    ]
+  }
+]

@@ -19,6 +19,7 @@ const PLAYER_SPAWN = Vector3(0, 0.1, 1)
 @export var customer_pos: Vector3 = Vector3(0, -0.9, 0)
 
 func _ready():
+	_load_apothecary_shell()
 	var music = load("res://audio/music.mp3")
 	if music:
 		music.loop = true
@@ -30,9 +31,12 @@ func _ready():
 	var player = $Player
 	if player:
 		player.add_to_group("player")
+		# Start in front of Saint Oswin church
+		player.global_position = Vector3(1.5, 0.1, 47.0)
+		player.rotation_degrees.y = 0.0
 	_apply_floor_texture()
 	_apply_wall_texture()
-	_apply_street_texture()
+	_place_streets()
 	_place_counter()
 	_place_workbench_model()
 	_place_mortar_model()
@@ -57,14 +61,305 @@ func _ready():
 	_place_watering_cup()
 	_place_water_bucket()
 	_place_bed_sleep_trigger()
-	_place_well()
+	#_place_well()
 	_place_field()
 	_place_neighbor_house()
 	_place_twin_chimney_house()
 	_place_side_ground()
 	_place_wagon()
-	_place_shed()
+	#_place_shed()
 	_place_firewood_rack()
+	_place_refuse_bin()
+	_place_corner_house()
+	_place_dyers_corner_house()
+	_place_row_house()
+	_place_coopers_house()
+	_place_undertakers_house()
+	_place_passage_house()
+
+	_place_lantern_house()
+	_place_narrow_merchant_courtyard()
+	_place_crooked_spindle()
+	_place_black_ledger()
+	_place_row_house_west()
+	_place_thirteenth_hour()
+	_place_sable_court()
+	_place_bell_ringers()
+	_place_hollowmere()
+	_place_hollow_stag_tavern()
+	_place_hollow_lantern()
+	_place_rookery()
+	_place_tallow_lane()
+	_place_ashwatch()
+	_place_tallow_lane_2()
+
+	_place_mid_cross_house()
+	_place_tallow_lane_cross()
+	_place_iron_quill()
+	_place_saint_oswin()
+	_place_barrowroot()
+	#_place_left_tcross_houses()
+	#_place_left_tcross_street()
+	_place_river()
+	_place_forest()
+	var _placer := Node.new()
+	_placer.name = "DebugPlacer"
+	_placer.set_script(load("res://scripts/debug_placer.gd"))
+	add_child(_placer)
+
+func _place_river():
+	var glb = load("res://models/broken-river-strip-50m.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	# River runs 50m along X, 16m across Z.
+	# Near bank (GLB +Z) aligns with street end at world Z=-13;
+	# center of river is 8m further: Z=-13-8=-21. Far bank ends at Z=-29.
+	instance.position = Vector3(1.5, 0.0, -21.0)
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	_strip_collision(instance)
+	_fix_river_materials(instance)
+
+	# Near-bank (apothecary side): Z -13 → -16.6, full river length in X
+	var near_body = StaticBody3D.new()
+	near_body.position = Vector3(1.5, 0.0, -14.8)
+	add_child(near_body)
+	var near_col = CollisionShape3D.new()
+	var near_shape = BoxShape3D.new()
+	near_shape.size = Vector3(50.0, 0.2, 3.6)
+	near_col.shape = near_shape
+	near_body.add_child(near_col)
+
+	# Far-bank (other side): Z -25.4 → -29
+	var far_body = StaticBody3D.new()
+	far_body.position = Vector3(1.5, 0.0, -27.2)
+	add_child(far_body)
+	var far_col = CollisionShape3D.new()
+	var far_shape = BoxShape3D.new()
+	far_shape.size = Vector3(50.0, 0.2, 3.6)
+	far_col.shape = far_shape
+	far_body.add_child(far_col)
+
+	# Bridge walkway — flat box at same level as banks (top at Y=0.1)
+	# Spans from near-bank end (Z=-16.6) through far-bank start (Z=-25.4)
+	var bridge_body = StaticBody3D.new()
+	bridge_body.position = Vector3(1.5, 0.0, -21.0)
+	add_child(bridge_body)
+	var bridge_col = CollisionShape3D.new()
+	var bridge_shape = BoxShape3D.new()
+	bridge_shape.size = Vector3(3.0, 0.2, 9.0)
+	bridge_col.shape = bridge_shape
+	bridge_body.add_child(bridge_col)
+
+	# Water — deep safety net only, far below walkable surfaces
+	var water_body = StaticBody3D.new()
+	water_body.position = Vector3(1.5, -5.0, -21.0)
+	add_child(water_body)
+	var water_col = CollisionShape3D.new()
+	var water_shape = BoxShape3D.new()
+	water_shape.size = Vector3(50.0, 0.2, 16.0)
+	water_col.shape = water_shape
+	water_body.add_child(water_col)
+
+	# Bridge side walls — stop player walking off the edges into the river
+	for side in [-1, 1]:
+		var wall = StaticBody3D.new()
+		wall.position = Vector3(1.5 + side * 1.6, 1.0, -21.0)
+		add_child(wall)
+		var wc = CollisionShape3D.new()
+		var ws = BoxShape3D.new()
+		ws.size = Vector3(0.2, 2.0, 9.5)
+		wc.shape = ws
+		wall.add_child(wc)
+
+func _fix_river_materials(node: Node) -> void:
+	if node is MeshInstance3D:
+		for i in node.mesh.get_surface_count():
+			var orig = node.mesh.surface_get_material(i)
+			var mat_name = orig.resource_name if orig else ""
+			var replacement: StandardMaterial3D
+			match mat_name:
+				"Wet dark river mud":
+					replacement = StandardMaterial3D.new()
+					replacement.albedo_color = Color(0.15, 0.11, 0.07)
+					replacement.roughness = 1.0
+				"Cut bank earth":
+					replacement = StandardMaterial3D.new()
+					replacement.albedo_color = Color(0.28, 0.20, 0.12)
+					replacement.roughness = 1.0
+				"Dark river stones":
+					replacement = StandardMaterial3D.new()
+					replacement.albedo_color = Color(0.18, 0.17, 0.15)
+					replacement.roughness = 1.0
+				"Old bridge oak":
+					replacement = StandardMaterial3D.new()
+					replacement.albedo_color = Color(0.22, 0.15, 0.09)
+					replacement.roughness = 0.9
+			if replacement:
+				node.set_surface_override_material(i, replacement)
+	for child in node.get_children():
+		_fix_river_materials(child)
+
+func _build_pine_mesh() -> ArrayMesh:
+	var arr_mesh = ArrayMesh.new()
+	var st = SurfaceTool.new()
+	const SIDES = 12  # rounder silhouette, still cheap
+
+	# Surface 0: trunk — 12-sided cylinder
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var tr := 0.13; var th := 1.5
+	for i in SIDES:
+		var a0 := TAU * i / SIDES
+		var a1 := TAU * (i + 1) / SIDES
+		var b0 := Vector3(tr * cos(a0), 0.0, tr * sin(a0))
+		var b1 := Vector3(tr * cos(a1), 0.0, tr * sin(a1))
+		var t0 := Vector3(tr * cos(a0), th,  tr * sin(a0))
+		var t1 := Vector3(tr * cos(a1), th,  tr * sin(a1))
+		st.add_vertex(b0); st.add_vertex(t0); st.add_vertex(t1)
+		st.add_vertex(b0); st.add_vertex(t1); st.add_vertex(b1)
+	st.generate_normals()
+	st.commit(arr_mesh)
+	var tm := StandardMaterial3D.new()
+	tm.albedo_color = Color(0.20, 0.12, 0.07)
+	tm.roughness = 1.0
+	arr_mesh.surface_set_material(0, tm)
+
+	# Surface 1: 5 overlapping foliage tiers — all in one surface, per-vertex colour
+	# Each tier is a wide flat cone; they overlap so there are no gaps.
+	# Colour gradient: darkest at base, slightly lighter at top.
+	var tiers: Array = [
+		# [base_y, radius, height, Color]
+		[0.4,  2.0,  0.8,  Color(0.045, 0.130, 0.035)],
+		[0.95, 1.65, 0.82, Color(0.055, 0.155, 0.045)],
+		[1.5,  1.25, 0.86, Color(0.065, 0.175, 0.055)],
+		[2.05, 0.82, 0.90, Color(0.080, 0.200, 0.065)],
+		[2.6,  0.42, 1.10, Color(0.095, 0.225, 0.075)],
+	]
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for tier in tiers:
+		var base_y: float = tier[0]
+		var radius: float = tier[1]
+		var height: float = tier[2]
+		var col: Color  = tier[3]
+		var apex := Vector3(0.0, base_y + height, 0.0)
+		for i in SIDES:
+			var a0 := TAU * i / SIDES
+			var a1 := TAU * (i + 1) / SIDES
+			var v0 := Vector3(radius * cos(a0), base_y, radius * sin(a0))
+			var v1 := Vector3(radius * cos(a1), base_y, radius * sin(a1))
+			# Cone face
+			st.set_color(col); st.add_vertex(apex)
+			st.set_color(col); st.add_vertex(v0)
+			st.set_color(col); st.add_vertex(v1)
+	st.generate_normals()
+	st.commit(arr_mesh)
+	var fm := StandardMaterial3D.new()
+	fm.vertex_color_use_as_albedo = true
+	fm.roughness = 1.0
+	arr_mesh.surface_set_material(1, fm)
+
+	return arr_mesh
+
+func _collect_meshes(node: Node, out: Array) -> void:
+	if node is MeshInstance3D and node.mesh:
+		out.append(node.mesh)
+	for child in node.get_children():
+		_collect_meshes(child, out)
+
+func _gen_xforms(rng: RandomNumberGenerator, count: int,
+		x_min: float, x_max: float, z_min: float, z_max: float,
+		s_min: float, s_max: float) -> Array:
+	# Tree GLB is Z-up — rotate -90° around X so it stands upright in Godot's Y-up world
+	var stand_up := Basis(Vector3.RIGHT, -PI / 2.0)
+	var result := []
+	for i in count:
+		var x := rng.randf_range(x_min, x_max)
+		var z := rng.randf_range(z_min, z_max)
+		var s := rng.randf_range(s_min, s_max)
+		var rot := rng.randf_range(0.0, TAU)
+		var basis := (Basis(Vector3.UP, rot) * stand_up).scaled(Vector3(s, s, s))
+		result.append(Transform3D(basis, Vector3(x, 0.0, z)))
+	return result
+
+func _spawn_multimesh(mesh: Mesh, xforms: Array) -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = xforms.size()
+	for i in xforms.size():
+		mm.set_instance_transform(i, xforms[i])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	add_child(mmi)
+
+func _place_forest() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+
+	# Collect all mesh parts from GLB (leaves + trunk); fallback to procedural
+	var mesh_list: Array = []
+	var glb = load("res://models/pine-tree.glb")
+	if glb:
+		var scene = glb.instantiate()
+		_collect_meshes(scene, mesh_list)
+		scene.queue_free()
+	if mesh_list.is_empty():
+		mesh_list.append(_build_pine_mesh())
+
+	# Generate shared transforms for each layer (all mesh parts use same positions)
+	var front := _gen_xforms(rng, 150, -40.0, 43.0, -30.0, -42.0, 3.0, 5.0)
+	var back  := _gen_xforms(rng, 250, -40.0, 43.0, -42.0, -60.0, 4.5, 7.0)
+	for mesh in mesh_list:
+		_spawn_multimesh(mesh, front)
+		_spawn_multimesh(mesh, back)
+
+	# Dark backdrop wall — blocks the void behind the treeline
+	var wall_mat := StandardMaterial3D.new()
+	wall_mat.albedo_color = Color(0.04, 0.03, 0.02)
+	wall_mat.roughness = 1.0
+	wall_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_make_wall_segment(Vector3(1.5, 7.0, -64.0), Vector3(120.0, 14.0, 0.3), wall_mat)
+
+	# Forest floor — dark earthy ground from river bank to back of forest (Z -29 → -65)
+	var floor_mat := StandardMaterial3D.new()
+	floor_mat.albedo_color = Color(0.10, 0.08, 0.05)
+	floor_mat.roughness = 1.0
+	_make_street_plane(Vector3(1.5, 0.0, -47.0), Vector2(83.0, 36.0), floor_mat)
+
+	# Invisible wall at treeline
+	var wall := StaticBody3D.new()
+	wall.position = Vector3(1.5, 3.0, -30.0)
+	add_child(wall)
+	var wc := CollisionShape3D.new()
+	var ws := BoxShape3D.new()
+	ws.size = Vector3(83.0, 6.0, 0.3)
+	wc.shape = ws
+	wall.add_child(wc)
+
+	# Depth fog
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.08, 0.06, 0.05)
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_density = 0.035
+	env.fog_light_color = Color(0.08, 0.06, 0.05)
+	env.fog_sky_affect = 1.0
+	var we := WorldEnvironment.new()
+	we.environment = env
+	add_child(we)
+
+func _place_refuse_bin():
+	var glb = load("res://models/medieval-apothecary-refuse-bin.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.position = Vector3(5.3, 0.0, -1.83)
+	instance.rotation_degrees.y = -90
+	instance.scale = Vector3(2, 2, 2)
+	add_child(instance)
+	_add_blocker(Vector3(5.3, 0.4, -1.83), Vector3(1.0, 0.8, 0.8))
 
 func _place_firewood_rack():
 	var body = StaticBody3D.new()
@@ -126,11 +421,24 @@ func _place_wagon():
 	instance.position = Vector3(14.0, 0.0, 3.0)
 	add_child(instance)
 
+	# Interaction trigger on the near side of the wagon (player-facing side, Z≈4.5)
+	var cart = StaticBody3D.new()
+	cart.set_script(load("res://scripts/merchant_cart.gd"))
+	cart.collision_layer = 2
+	cart.collision_mask  = 0
+	cart.position = Vector3(14.0, 1.0, 4.5)
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(2.0, 2.0, 0.4)
+	col.shape = shape
+	cart.add_child(col)
+	add_child(cart)
+
 func _place_side_ground():
-	# Ground between/around the neighbor houses (X: 6→28, Z: -8→+7)
+	# Gravel ground to the right of the shop and forward street (X: 6→28, Z: -8→40)
 	var area_w = 22.0
-	var area_d = 15.0
-	var center = Vector3(17.0, 0.0, -0.5)
+	var area_d = 48.0
+	var center = Vector3(17.0, 0.0, 16.0)
 
 	# Collision so the player can walk here
 	var body = StaticBody3D.new()
@@ -142,23 +450,25 @@ func _place_side_ground():
 	col.shape = shape
 	body.add_child(col)
 
-	# Grass visual — same material extraction as _place_grass()
-	var glb = load("res://models/grass_tile_texture.glb")
-	if not glb:
-		return
-	var scene = glb.instantiate()
-	var mesh_inst = scene.find_child("Plane_Material_0", true, false)
-	var mat = null
-	if mesh_inst is MeshInstance3D and mesh_inst.mesh and mesh_inst.mesh.get_surface_count() > 0:
-		mat = mesh_inst.mesh.surface_get_material(0)
-	scene.queue_free()
+	# Gravel material — same as the streets
+	var albedo  = load("res://models/gravel_macro__tile_texture_0.jpg")
+	var rough   = load("res://models/gravel_macro__tile_texture_1.png")
+	var normal  = load("res://models/gravel_macro__tile_texture_2.jpg")
+	var mat = StandardMaterial3D.new()
+	if albedo: mat.albedo_texture = albedo
+	if rough:  mat.roughness_texture = rough
+	if normal:
+		mat.normal_enabled = true
+		mat.normal_texture = normal
+	mat.uv1_scale = Vector3(14, 30, 1)
+	mat.roughness = 1.0
+
 	var ground = MeshInstance3D.new()
 	var plane_mesh = PlaneMesh.new()
 	plane_mesh.size = Vector2(area_w, area_d)
-	if mat:
-		plane_mesh.material = mat
+	plane_mesh.material = mat
 	ground.mesh = plane_mesh
-	ground.position = center + Vector3(0, 0.01, 0)
+	ground.position = center + Vector3(0, -0.001, 0)
 	add_child(ground)
 
 func _place_shed():
@@ -181,28 +491,57 @@ func _place_shed():
 	add_child(instance)
 
 func _place_field():
-	# Flat ground: 12m wide (matches house X:-6→+6), 25m deep (Z -5 → -30)
-	var ground_mat = StandardMaterial3D.new()
-	ground_mat.albedo_color = Color(0.25, 0.55, 0.15)
-	ground_mat.roughness = 1.0
-	_make_wall_segment(Vector3(0, -0.1, -17.5), Vector3(12, 0.2, 25), ground_mat)
+	# Back lane — same gravel material as the front cross-street
+	var albedo = load("res://models/gravel_macro__tile_texture_0.jpg")
+	var rough  = load("res://models/gravel_macro__tile_texture_1.png")
+	var normal = load("res://models/gravel_macro__tile_texture_2.jpg")
+	var mat = StandardMaterial3D.new()
+	if albedo: mat.albedo_texture = albedo
+	if rough:  mat.roughness_texture = rough
+	if normal:
+		mat.normal_enabled = true
+		mat.normal_texture = normal
+	mat.roughness = 1.0
+	mat.uv1_scale = Vector3(53, 5, 1)
+	# 83m wide × 8m deep, covering Z -5 → -13 (behind house back wall)
+	_make_street_plane(Vector3(1.5, 0, -9.0), Vector2(83, 8), mat)
 
-	# Invisible boundary walls (collision only, no mesh)
-	for data in [
-		[Vector3(-6, 1.5, -17.5), Vector3(0.2, 3.0, 25)],  # left side
-		[Vector3( 6, 1.5, -17.5), Vector3(0.2, 3.0, 25)],  # right side
-		[Vector3( 0, 1.5, -30),   Vector3(12, 3.0, 0.2)],  # far end
-	]:
-		var body = StaticBody3D.new()
-		body.position = data[0]
-		add_child(body)
-		var col = CollisionShape3D.new()
-		var shape = BoxShape3D.new()
-		shape.size = data[1]
-		col.shape = shape
-		body.add_child(col)
-
-	_place_grass()
+func _place_riverside_field_border():
+	var glb = load("res://models/riverside-field-border.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	# Field clear bounds in border local space: X -6..6, Z 0..25
+	# Our backyard runs Z -5..-30, so place at (0, 0, -5) rotated 180° to flip Z
+	var pos = Vector3(0.0, 0.0, -5.0)
+	instance.position = pos
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 180.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/riverside-field-border-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry["size"]
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry["position"]
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
 
 func _place_grass():
 	var glb = load("res://models/grass_tile_texture.glb")
@@ -233,16 +572,17 @@ func _place_pots():
 	var pot_y = 1.15
 	var pot_scale = 1.5
 
-	var positions = [
-		Vector3(1.9,    pot_y, 4.35),
-		Vector3(2.75,   pot_y, 4.35),
-		Vector3(3.6,    pot_y, 4.35),
-		Vector3(4.45,   pot_y, 4.35),
-		Vector3(5.3,    pot_y, 4.35),
-		Vector3(-3.525, pot_y, 4.35),
+	var pot_data = [
+		{ "pos": Vector3(1.9,    pot_y, 4.35), "plant": "snake_plant" },
+		{ "pos": Vector3(2.75,   pot_y, 4.35), "plant": "basil"       },
+		{ "pos": Vector3(3.6,    pot_y, 4.35), "plant": "aloe_vera"   },
+		{ "pos": Vector3(4.45,   pot_y, 4.35), "plant": "bee_balm"    },
+		{ "pos": Vector3(5.3,    pot_y, 4.35), "plant": "calendula"   },
+		{ "pos": Vector3(-3.525, pot_y, 4.35), "plant": "chamomile"   },
 	]
 
-	for pos in positions:
+	for entry in pot_data:
+		var pos = entry["pos"]
 		var body = StaticBody3D.new()
 		body.set_script(pot_script)
 		body.position = pos
@@ -267,6 +607,7 @@ func _place_pots():
 			body.pot_visual_root = visual
 
 		add_child(body)
+		body.start_mature(entry["plant"])
 
 func _place_watering_cup():
 	var body = StaticBody3D.new()
@@ -305,7 +646,7 @@ func _place_water_bucket():
 	var body = StaticBody3D.new()
 	body.set_script(load("res://scripts/water_bucket.gd"))
 	body.position = Vector3(5.1, 0, 3.4)
-	body.collision_layer = 2
+	body.collision_layer = 3
 	body.collision_mask = 0
 
 	var col = CollisionShape3D.new()
@@ -334,54 +675,57 @@ func _place_bed_sleep_trigger():
 	add_child(body)
 
 func _apply_floor_texture():
-	var texture = load("res://models/dark_wooden_floor__tile_texture_0.png")
-	if not texture:
-		return
-	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = texture
-	mat.uv1_scale = Vector3(6, 6, 1)
-	mat.roughness = 0.8
-	$Floor/Mesh.material_override = mat
+	pass # Replaced by the imported architectural shell.
 
 func _apply_wall_texture():
-	var albedo = load("res://models/dark_log_wall__tile_texture_0.png")
-	var normal = load("res://models/dark_log_wall__tile_texture_2.png")
-	var roughness = load("res://models/dark_log_wall__tile_texture_1.png")
+	pass # Replaced by the imported architectural shell.
 
+func _place_streets():
+	var albedo  = load("res://models/gravel_macro__tile_texture_0.jpg")
+	var rough   = load("res://models/gravel_macro__tile_texture_1.png")
+	var normal  = load("res://models/gravel_macro__tile_texture_2.jpg")
 	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = albedo
-	mat.normal_enabled = true
-	mat.normal_texture = normal
-	mat.roughness_texture = roughness
-	mat.uv1_scale = Vector3(5, 2.5, 1)
+	if albedo: mat.albedo_texture = albedo
+	if rough:  mat.roughness_texture = rough
+	if normal:
+		mat.normal_enabled = true
+		mat.normal_texture = normal
 	mat.roughness = 1.0
-	for wall in [$WallBack/Mesh, $WallLeft/Mesh, $WallRight/Mesh, $WallFrontLeft/Mesh, $WallFrontRight/Mesh]:
-		wall.material_override = mat
 
-	# WallAboveDoor is 2×1m — scale UVs proportionally so planks match adjacent walls
-	var mat_above = StandardMaterial3D.new()
-	mat_above.albedo_texture = albedo
-	mat_above.normal_enabled = true
-	mat_above.normal_texture = normal
-	mat_above.roughness_texture = roughness
-	mat_above.uv1_scale = Vector3(2.1, 0.567, 1)
-	mat_above.roughness = 1.0
-	$WallAboveDoor/Mesh.material_override = mat_above
+	# Left-right street: 83m wide × 7m deep, centered at X=1.5 (covers X -40 to +43), Z 5→12
+	mat.uv1_scale = Vector3(53, 5, 1)
+	_make_street_plane(Vector3(1.5, 0, 8.5), Vector2(83, 7), mat)
 
-func _apply_street_texture():
-	var albedo = load("res://models/gravel_macro__tile_texture_0.jpg")
-	var roughness = load("res://models/gravel_macro__tile_texture_1.png")
-	var normal = load("res://models/gravel_macro__tile_texture_2.jpg")
-	if not albedo:
-		return
-	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = albedo
-	mat.roughness_texture = roughness
-	mat.normal_enabled = true
-	mat.normal_texture = normal
-	mat.uv1_scale = Vector3(30, 8, 1)
-	mat.roughness = 1.0
-	$Street/Mesh.material_override = mat
+	# Forward area: Z 12→62, past Tallow Lane (Z=41) with some margin
+	var mat2 = mat.duplicate()
+	mat2.uv1_scale = Vector3(53, 33, 1)
+	_make_street_plane(Vector3(1.5, 0.001, 37.0), Vector2(83, 50), mat2)
+
+	# Left-end wall (X=-40) matched to forward area Z range
+	var lw = StaticBody3D.new()
+	lw.position = Vector3(-40.0, 2, 37.0)
+	add_child(lw)
+	var lwc = CollisionShape3D.new()
+	var lws = BoxShape3D.new()
+	lws.size = Vector3(0.2, 4, 50)
+	lwc.shape = lws
+	lw.add_child(lwc)
+
+func _make_street_plane(pos: Vector3, size: Vector2, mat: Material):
+	var body = StaticBody3D.new()
+	body.position = pos
+	add_child(body)
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(size.x, 0.2, size.y)
+	col.shape = shape
+	body.add_child(col)
+	var mesh_inst = MeshInstance3D.new()
+	var plane = PlaneMesh.new()
+	plane.size = size
+	plane.material = mat
+	mesh_inst.mesh = plane
+	body.add_child(mesh_inst)
 
 func _place_counter():
 	var glb = load("res://models/counter.glb")
@@ -404,12 +748,14 @@ func _place_workbench_model():
 	instance.rotation_degrees = Vector3(0, 90, 0)
 	$Workbench/Mesh.visible = false
 	$Workbench.add_child(instance)
+	_add_blocker(Vector3(4.5, 0.55, -3.5), Vector3(1.0, 1.1, 2.5))
 
 func _place_mortar_model():
 	var glb = load("res://models/stone_mortar.glb")
 	if not glb:
 		return
 	var instance = glb.instantiate()
+	instance.name = "Mortar"
 	instance.scale = Vector3(2.0, 2.0, 2.0)
 	instance.position = Vector3(0, 0, 0)
 	$Mortar/Mesh.visible = false
@@ -429,49 +775,7 @@ func _place_herb_model():
 	$Herbs.setup(instance)
 
 func _place_windows():
-	var glb = load("res://models/window2.glb")
-	if not glb:
-		return
-	var albedo = load("res://models/dark_log_wall__tile_texture_0.png")
-	var normal_tex = load("res://models/dark_log_wall__tile_texture_2.png")
-	var roughness_tex = load("res://models/dark_log_wall__tile_texture_1.png")
-	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = albedo
-	mat.normal_enabled = true
-	mat.normal_texture = normal_tex
-	mat.roughness_texture = roughness_tex
-	mat.uv1_scale = Vector3(5, 2.5, 1)
-	mat.roughness = 1.0
-	for panel_x in [-3.525, 3.525]:
-		var old_wall = $WallFrontLeft if panel_x < 0 else $WallFrontRight
-		old_wall.get_node("Mesh").visible = false
-		for child in old_wall.get_children():
-			if child is CollisionShape3D:
-				child.disabled = true
-		var csg = CSGCombiner3D.new()
-		csg.use_collision = true
-		csg.position = Vector3(panel_x, 2, 5)
-		add_child(csg)
-		var wall_box = CSGBox3D.new()
-		wall_box.size = Vector3(4.95, 4, 0.2)
-		wall_box.material = mat
-		csg.add_child(wall_box)
-		# Rectangular hole — sill at world Y=1.1, csg origin at Y=2, local Y=-0.9
-		var hole = CSGCombiner3D.new()
-		hole.operation = CSGShape3D.OPERATION_SUBTRACTION
-		hole.position = Vector3(0, -0.9, 0)
-		csg.add_child(hole)
-		var rect = CSGBox3D.new()
-		rect.size = Vector3(1.40, 1.74, 0.3)
-		rect.position = Vector3(0, 0.87, 0)
-		hole.add_child(rect)
-		var win = glb.instantiate()
-		win.scale = Vector3(0.25, 0.25, 0.25)
-		add_child(win)
-		win.global_position = Vector3(panel_x, 1.1, 5.0)
-		win.rotation_degrees = Vector3(0, 180, 0)
-		_strip_collision(win)
-
+	pass # Replaced by the imported architectural shell.
 
 func _place_vial_model():
 	var glb = load("res://models/vial.glb")
@@ -484,6 +788,7 @@ func _place_vial_model():
 	$Vial.add_child(instance)
 	_strip_collision(instance)
 	$Vial.setup(instance)
+	$Vial.fill()  # pre-filled for testing — wrong remedy triggers death animation
 
 func _place_customer():
 	var glb = load("res://models/Walking.glb")
@@ -500,48 +805,27 @@ func _place_customer():
 		$Customer.set_animation_player(anim_player)
 
 func _place_door():
-	var glb = load("res://models/simple_room_door.glb")
-	if not glb:
-		return
-	var instance = glb.instantiate()
-	instance.rotation_degrees = Vector3(0, -90, 0)
-	instance.scale = Vector3(0.7, 0.7, 0.7)
-	add_child(instance)
-	instance.global_position = Vector3(-0.658, 0, 5.0)
-	_strip_collision(instance)
-
-	var door_node = _find_node_by_name(instance, "Door")
-	if not door_node:
-		return
-
-	# Re-parent Handle under Door so it moves with the panel
-	var handle_node = _find_node_by_name(instance, "Handle")
-	if handle_node:
-		var saved_transform = handle_node.global_transform
-		handle_node.get_parent().remove_child(handle_node)
-		door_node.add_child(handle_node)
-		handle_node.global_transform = saved_transform
-
+	var shell = get_node("ApothecaryHouseShell")
+	var door_node = shell.find_part("FrontDoorPivot")
 	var pivot = Node3D.new()
 	pivot.set_script(preload("res://scripts/door_pivot.gd"))
 	pivot.add_to_group("door_pivot")
 	pivot.blocker = $DoorBlocker
 	pivot.door_node = door_node
 	add_child(pivot)
-
 	var trigger = StaticBody3D.new()
 	trigger.set_script(preload("res://scripts/door_handle.gd"))
 	var col = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(2.5, 3.5, 0.5)
+	shape.size = Vector3(2.5,3.5,.5)
 	col.shape = shape
-	col.position = Vector3(0.0, 1.5, 0.0)
+	col.position = Vector3(0,1.5,0)
 	trigger.add_child(col)
 	trigger.collision_layer = 2
 	trigger.collision_mask = 0
 	trigger.pivot = pivot
 	add_child(trigger)
-	trigger.global_position = Vector3(0.0, 0.0, 5.0)
+	trigger.global_position = Vector3(0,0,5)
 
 func _place_reading_table():
 	var glb = load("res://models/counter.glb")
@@ -553,8 +837,9 @@ func _place_reading_table():
 	add_child(body)
 	var col = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(2.0, 1.0, 0.7)
+	shape.size = Vector3(2.5, 1.1, 1.0)
 	col.shape = shape
+	col.position = Vector3(-0.75, 0.0, 0.15)  # align with GLB visual centre
 	body.add_child(col)
 	var instance = glb.instantiate()
 	var rt_scale = counter_scale * 1.05
@@ -575,7 +860,7 @@ func _place_books_on_table():
 		add_child(book_body)
 		var col = CollisionShape3D.new()
 		var cshape = BoxShape3D.new()
-		cshape.size = Vector3(0.45, 0.08, 0.35)
+		cshape.size = Vector3(0.55, 0.35, 0.45)
 		col.shape = cshape
 		book_body.add_child(col)
 		var inst = open_glb.instantiate()
@@ -583,6 +868,25 @@ func _place_books_on_table():
 		inst.rotation_degrees = Vector3(-90, 0, 0)
 		book_body.add_child(inst)
 		_strip_collision(inst)
+
+	# Afflictions book — same mesh, slightly right and rotated, opens afflictions_popup
+	if open_glb:
+		var book_body2 = StaticBody3D.new()
+		book_body2.collision_layer = 2
+		book_body2.collision_mask = 0
+		book_body2.set_script(preload("res://scripts/afflictions_book.gd"))
+		book_body2.position = Vector3(-3.2, 1.15, -2.70)
+		add_child(book_body2)
+		var col2 = CollisionShape3D.new()
+		var cshape2 = BoxShape3D.new()
+		cshape2.size = Vector3(0.45, 0.08, 0.35)
+		col2.shape = cshape2
+		book_body2.add_child(col2)
+		var inst2 = open_glb.instantiate()
+		inst2.scale = Vector3(0.28, 0.28, 0.28)
+		inst2.rotation_degrees = Vector3(-90, 20, 0)
+		book_body2.add_child(inst2)
+		_strip_collision(inst2)
 
 	# Book stack — already upright
 	var stack_glb = load("res://models/medieval_book_stack.glb")
@@ -603,60 +907,18 @@ func _place_bookcase():
 	add_child(instance)
 	instance.global_position = Vector3(-4.0, 0.0, -1.6)
 	_strip_collision(instance)
+	_add_blocker(Vector3(-4.0, 1.0, -1.6), Vector3(2.0, 2.0, 0.8))
 
 func _place_interior_wall():
-	var albedo = load("res://models/dark_log_wall__tile_texture_0.png")
-	var normal = load("res://models/dark_log_wall__tile_texture_2.png")
-	var roughness_tex = load("res://models/dark_log_wall__tile_texture_1.png")
-	var mat = StandardMaterial3D.new()
-	mat.albedo_texture = albedo
-	mat.normal_enabled = true
-	mat.normal_texture = normal
-	mat.roughness_texture = roughness_tex
-	mat.uv1_scale = Vector3(1.67, 2.5, 1)
-	mat.roughness = 1.0
-
-	var wall = StaticBody3D.new()
-	wall.position = Vector3(-4.0, 2.0, -1.5)
-	add_child(wall)
-
-	var mesh_inst = MeshInstance3D.new()
-	var box = BoxMesh.new()
-	box.size = Vector3(4.0, 4.0, 0.2)
-	mesh_inst.mesh = box
-	mesh_inst.material_override = mat
-	wall.add_child(mesh_inst)
-
-	var col = CollisionShape3D.new()
-	var shape = BoxShape3D.new()
-	shape.size = Vector3(4.0, 4.0, 0.2)
-	col.shape = shape
-	wall.add_child(col)
+	pass # Replaced by the imported architectural shell.
 
 func _place_forge():
-	var glb = load("res://models/forge.glb")
-	if not glb:
-		return
-	var instance = glb.instantiate()
-	instance.scale = Vector3(0.8, 0.8, 0.8)
-	instance.rotation_degrees = Vector3(0, -90, 0)
-	instance.position = Vector3(5.3, 0, 1.5)
-	add_child(instance)
-	_strip_collision(instance)
-
-	var pot_glb = load("res://models/boiling_pot_lightblue.glb")
-	if not pot_glb:
-		return
-	var pot = pot_glb.instantiate()
-	pot.scale = Vector3(0.6, 0.6, 0.6)
-	pot.rotation_degrees = Vector3(0, 270, 0)
-	pot.position = Vector3(4.35, 0.5, 1.5)
-	add_child(pot)
-	_strip_collision(pot)
-	_place_pot_trigger(pot)
-
-func _place_pot_trigger(visual_instance: Node):
-	$Pot.setup(visual_instance)
+	var body = StaticBody3D.new()
+	body.set_script(load("res://scripts/forge_trigger.gd"))
+	body.scale = Vector3(0.8, 0.8, 0.8)
+	body.rotation_degrees = Vector3(0, -90, 0)
+	body.position = Vector3(5.3, 0, 1.5)
+	add_child(body)
 
 func _place_window_table():
 	var glb = load("res://models/window_plant_table.glb")
@@ -667,6 +929,7 @@ func _place_window_table():
 	instance.position = Vector3(-3.525, 0, 4.35)
 	add_child(instance)
 	_strip_collision(instance)
+	_add_blocker(Vector3(-3.525, 0.5, 4.35), Vector3(1.4, 1.0, 0.5))
 
 func _place_long_window_table():
 	var glb = load("res://models/medieval-long-window-plant-table-2.glb")
@@ -677,6 +940,7 @@ func _place_long_window_table():
 	instance.position = Vector3(3.525, 0, 4.35)
 	add_child(instance)
 	_strip_collision(instance)
+	_add_blocker(Vector3(3.525, 0.5, 4.35), Vector3(4.0, 1.0, 0.5))
 
 
 func _place_ingredient_rack():
@@ -703,6 +967,7 @@ func _place_bed():
 	instance.position = Vector3(-5.0, 0.0, 2.5)
 	add_child(instance)
 	_strip_collision(instance)
+	_add_blocker(Vector3(-5.0, 0.3, 2.5), Vector3(1.5, 0.6, 2.4))
 	# Lower the bedding so it sits inside the frame rather than floating above it
 	var bedding = ["Bedding | linen tick mattress", "Bedding | stuffed linen pillow", "Bedding | draped olive wool blanket"]
 	for child in instance.get_children():
@@ -719,105 +984,36 @@ func _place_shelf():
 	instance.position = Vector3(5.5, 0.65, -3.5)
 	add_child(instance)
 	_strip_collision(instance)
+	_add_blocker(Vector3(5.5, 1.5, -3.5), Vector3(0.4, 3.0, 2.5))
 
 func _place_back_door():
-	var door_w = 1.1
-	var door_h = 2.4
-	var wall_h = 4.0
-	var back_z = -5.0
-	var door_cx = -4.5     # close to left corner (x = -6)
-	var door_left  = door_cx - door_w * 0.5   # -5.05
-	var door_right = door_cx + door_w * 0.5   # -3.95
-
-	# Wall texture (same as rest of room)
-	var albedo = load("res://models/dark_log_wall__tile_texture_0.png")
-	var normal_tex = load("res://models/dark_log_wall__tile_texture_2.png")
-	var rough_tex = load("res://models/dark_log_wall__tile_texture_1.png")
-	var mat = StandardMaterial3D.new()
-	if albedo:
-		mat.albedo_texture = albedo
-	if normal_tex:
-		mat.normal_enabled = true
-		mat.normal_texture = normal_tex
-	if rough_tex:
-		mat.roughness_texture = rough_tex
-	mat.uv1_scale = Vector3(5, 2.5, 1)
-	mat.roughness = 1.0
-
-	# Replace solid back wall with three segments around the gap
-	$WallBack/Mesh.visible = false
-	get_node("WallBack/Col").disabled = true
-
-	# Left segment: corner (-6) → door left edge
-	var lw = door_left - (-6.0)   # 0.95
-	_make_wall_segment(Vector3(-6.0 + lw * 0.5, wall_h * 0.5, back_z), Vector3(lw, wall_h, 0.2), mat)
-
-	# Right segment: door right edge → corner (+6)
-	var rw = 6.0 - door_right     # 9.95
-	_make_wall_segment(Vector3(door_right + rw * 0.5, wall_h * 0.5, back_z), Vector3(rw, wall_h, 0.2), mat)
-
-	# Segment above the door opening — UV scale proportional to physical size
-	# Main wall: 12m wide / scale 5 = 2.4m per tile; 4m tall / scale 2.5 = 1.6m per tile
-	# This segment: 1.1m / 2.4 = 0.458, 1.6m / 1.6 = 1.0
-	var ah = wall_h - door_h      # 1.6
-	var mat_above = mat.duplicate()
-	mat_above.uv1_scale = Vector3(0.458, 1.0, 1)
-	_make_wall_segment(Vector3(door_cx, door_h + ah * 0.5, back_z), Vector3(door_w, ah, 0.2), mat_above)
-
-	# Invisible blocker fills the gap when the door is closed
+	var shell = get_node("ApothecaryHouseShell")
 	var blocker = StaticBody3D.new()
-	blocker.position = Vector3(door_cx, door_h * 0.5, back_z)
+	blocker.position = Vector3(-4.5,1.2,-5)
 	add_child(blocker)
-	var bc = CollisionShape3D.new()
-	var bs = BoxShape3D.new()
-	bs.size = Vector3(door_w, door_h, 0.2)
-	bc.shape = bs
-	blocker.add_child(bc)
-
-	# Door mesh
-	var glb = load("res://models/medieval_door-2.glb")
-	if not glb:
-		return
-	var instance = glb.instantiate()
-	# Tune scale if the mesh appears too big/small in-game
-	instance.scale = Vector3(0.18, 0.18, 0.18)
-	# Offset so the right visual edge aligns with the hinge at visual_pivot origin.
-	# Door extends leftward from the pivot (hinge on right).
-	instance.position = Vector3(-0.5608, 0.0, 0.0)
-	# Rotation: 0° assumes the GLB panel faces +Z by default (flat against the XY-plane back wall).
-	# If the door appears sideways or backwards, try Y rotations: 90, -90, or 180.
-	instance.rotation_degrees = Vector3(0, 180, 0)
-	_strip_collision(instance)
-
-	# visual_pivot sits at the hinge (right edge of gap, floor level).
-	# door_pivot.gd animates visual_pivot.rotation_degrees.y, swinging the door outward.
-	var visual_pivot = Node3D.new()
-	add_child(visual_pivot)
-	visual_pivot.global_position = Vector3(door_right, 0.0, back_z)
-	visual_pivot.add_child(instance)
-
-	# Script pivot node that drives the open/close tween
-	var dpivot = Node3D.new()
-	dpivot.set_script(preload("res://scripts/door_pivot.gd"))
-	dpivot.blocker = blocker
-	dpivot.door_node = visual_pivot
-	add_child(dpivot)
-
-	# Interaction trigger — player presses E within range to open/close
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(1.1,2.4,.2)
+	col.shape = shape
+	blocker.add_child(col)
+	var pivot = Node3D.new()
+	pivot.set_script(preload("res://scripts/door_pivot.gd"))
+	pivot.blocker = blocker
+	pivot.door_node = shell.find_part("BackDoorPivot")
+	add_child(pivot)
 	var trigger = StaticBody3D.new()
 	trigger.set_script(preload("res://scripts/door_handle.gd"))
-	var tcol = CollisionShape3D.new()
-	var tshape = BoxShape3D.new()
-	tshape.size = Vector3(door_w + 0.4, door_h, 0.5)
-	tcol.shape = tshape
-	tcol.position = Vector3(0.0, door_h * 0.5, 0.0)
-	trigger.add_child(tcol)
+	var tc = CollisionShape3D.new()
+	var ts = BoxShape3D.new()
+	ts.size = Vector3(1.5,2.4,.5)
+	tc.shape = ts
+	tc.position = Vector3(0,1.2,0)
+	trigger.add_child(tc)
 	trigger.collision_layer = 2
 	trigger.collision_mask = 0
-	trigger.pivot = dpivot
+	trigger.pivot = pivot
 	add_child(trigger)
-	trigger.global_position = Vector3(door_cx, 0.0, back_z)
-
+	trigger.global_position = Vector3(-4.5,0,-5)
 
 func _place_staircase():
 	var glb = load("res://models/medieval-left-turn-staircase.glb")
@@ -888,47 +1084,17 @@ func _place_staircase():
 	add_child(hg2)
 
 func _place_ceiling_and_second_floor():
-	# Disable the original solid ceiling from the scene — it blocks the staircase opening
-	$Ceiling/Mesh.visible = false
-	get_node("Ceiling/Col").disabled = true
+	pass # Replaced by the imported architectural shell.
 
-	# Floor texture — same as first floor
-	var floor_tex = load("res://models/dark_wooden_floor__tile_texture_0.png")
-	var floor_mat = StandardMaterial3D.new()
-	if floor_tex:
-		floor_mat.albedo_texture = floor_tex
-	floor_mat.uv1_scale = Vector3(6, 6, 1)
-	floor_mat.roughness = 0.8
-
-	# Wall texture — same as first floor
-	var albedo = load("res://models/dark_log_wall__tile_texture_0.png")
-	var normal_tex = load("res://models/dark_log_wall__tile_texture_2.png")
-	var rough_tex = load("res://models/dark_log_wall__tile_texture_1.png")
-	var wall_mat = StandardMaterial3D.new()
-	if albedo:
-		wall_mat.albedo_texture = albedo
-	if normal_tex:
-		wall_mat.normal_enabled = true
-		wall_mat.normal_texture = normal_tex
-	if rough_tex:
-		wall_mat.roughness_texture = rough_tex
-	wall_mat.uv1_scale = Vector3(5, 2.5, 1)
-	wall_mat.roughness = 1.0
-
-	# Ceiling with opening at X:-6→-4.3, Z:-1.5→3.4
-	# (30cm from right/interior side, 30cm total from front wall)
-	_make_wall_segment(Vector3(0.85,  4.0,  0.0),   Vector3(10.3, 0.2, 10.0), floor_mat) # right section (extended 30cm left)
-	_make_wall_segment(Vector3(-5.15, 4.0, -3.25),  Vector3(1.7,  0.2,  3.5), floor_mat) # left-back
-	_make_wall_segment(Vector3(-5.15, 4.0,  4.2),   Vector3(1.7,  0.2,  1.6), floor_mat) # left-front (Z 3.4→5.0)
-
-	# Second floor walls (Y=4 → Y=8)
-	_make_wall_segment(Vector3(0,    6.0, -5.0), Vector3(12.0, 4.0, 0.2), wall_mat)  # back
-	_make_wall_segment(Vector3(-6.0, 6.0,  0.0), Vector3(0.2,  4.0, 10.0), wall_mat) # left
-	_make_wall_segment(Vector3(6.0,  6.0,  0.0), Vector3(0.2,  4.0, 10.0), wall_mat) # right
-	_make_wall_segment(Vector3(0,    6.0,  5.0), Vector3(12.0, 4.0, 0.2), wall_mat)  # front
-
-	# Ceiling of second floor at Y=8
-	_make_wall_segment(Vector3(0, 8.0, 0), Vector3(12.0, 0.2, 10.0), floor_mat)
+func _add_blocker(pos: Vector3, size: Vector3) -> void:
+	var body = StaticBody3D.new()
+	body.position = pos
+	add_child(body)
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = size
+	col.shape = shape
+	body.add_child(col)
 
 func _make_wall_segment(pos: Vector3, size: Vector3, mat: Material):
 	var body = StaticBody3D.new()
@@ -956,11 +1122,25 @@ func _strip_oversized_meshes(node: Node, threshold: float):
 		_strip_oversized_meshes(child, threshold)
 
 func _strip_collision(node: Node):
+	if node is RigidBody3D:
+		node.freeze = true
 	if node is CollisionObject3D:
 		node.collision_layer = 0
 		node.collision_mask = 0
 	for child in node.get_children():
 		_strip_collision(child)
+
+func _dim_glb_lights(node: Node, energy: float):
+	if node is Light3D:
+		node.light_energy = energy
+	for child in node.get_children():
+		_dim_glb_lights(child, energy)
+
+func _disable_shadows(node: Node):
+	if node is GeometryInstance3D:
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in node.get_children():
+		_disable_shadows(child)
 
 func _find_node_by_name(node: Node, target: String) -> Node:
 	if node.name == target:
@@ -971,7 +1151,811 @@ func _find_node_by_name(node: Node, target: String) -> Node:
 			return result
 	return null
 
+
+func _place_corner_house():
+	var glb = load("res://models/grim-medieval-corner-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 180.0
+	# Left corner of the T-intersection: forward street left edge (X=-4) meets the cross-street (Z=12)
+	instance.position = Vector3(-6.3, 0.0, 15.4)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+
+func _place_dyers_corner_house():
+	var glb = load("res://models/grim-medieval-dyers-corner-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 270.0
+	# Right corner of the T-intersection — mirrored from the left corner house
+	instance.position = Vector3(6.3, 0.0, 15.4)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+
+func _place_row_house():
+	var glb = load("res://models/grim-medieval-row-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 180.0
+	# Next to the left corner house, shifted further left along the cross-street
+	instance.position = Vector3(-13.6, 0.0, 14.6)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+
+
+func _place_coopers_house():
+	var glb = load("res://models/grim-medieval-coopers-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 180.0
+	# Next to the dyers corner house (right side, X=6.3, Z=15.4)
+	instance.position = Vector3(13.1, 0.0, 14.8)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+
+func _place_undertakers_house():
+	var glb = load("res://models/grim-medieval-undertakers-house-2.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 270.0
+	# Further down the forward street, right side
+	instance.position = Vector3(6.0, 0.0, 25.0)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.3)
+
+	var wagon_glb = load("res://models/undertaker-body-wagon.glb")
+	if wagon_glb:
+		var wagon = wagon_glb.instantiate()
+		wagon.scale = Vector3(1.4, 1.4, 1.4)
+		wagon.rotation_degrees.y = 270.0
+		wagon.position = Vector3(12.6, 0.0, 23.4)
+		add_child(wagon)
+		_strip_collision(wagon)
+	# Coffin cart drop trigger — player must be within DROP_RADIUS to drop a body
+	var cart = Node3D.new()
+	cart.set_script(load("res://scripts/coffin_cart.gd"))
+	cart.position = Vector3(12.6, 0.0, 23.4)
+	cart.rotation_degrees.y = 270.0
+	add_child(cart)
+
+func _place_passage_house():
+	var glb = load("res://models/grim-medieval-passage-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 270.0
+	# Next to the undertakers house, further down the right side
+	instance.position = Vector3(6.1, 0.0, 34.3)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+
+
+func _place_undertaker_courtyard():
+	# Closes the NE corner of the undertaker courtyard.
+	# Gap runs from iron quill's north face (Z≈27) to passage house's south face (Z≈29.4),
+	# spanning X≈13 (undertaker east face) to X≈23.6 (iron quill west face).
+	# One building centred at X=18 with its back flush against the passage house fills it.
+	var glb = load("res://models/grim-medieval-fire-scarred-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 180.0
+	# Back face at Z≈29.4 (passage house south face); front faces south into courtyard
+	instance.position = Vector3(18.0, 0.0, 25.9)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+
+func _place_lantern_house():
+	var glb = load("res://models/grim-medieval-lantern-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 90.0
+	# Left side, across the street from the undertakers house (Z≈25)
+	instance.position = Vector3(-5.6, 0.0, 22.0)
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+
+func _place_narrow_merchant_courtyard():
+	var glb = load("res://models/blackthorn-gables-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 0.0
+	# Behind and connected to the Tallow Lane house (5.3, 0, 41)
+	var pos = Vector3(25.0, 0.0, 41.0)
+	instance.position = pos
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	_disable_shadows(instance)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 0.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/blackthorn-gables-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			var shape = BoxShape3D.new()
+			var s = entry.size
+			shape.size = Vector3(s[0] * 1.4, s[1] * 1.4, s[2] * 1.4)
+			col.shape = shape
+			var p = entry.position
+			col.position = Vector3(p[0] * 1.4, p[1] * 1.4, p[2] * 1.4)
+			body.add_child(col)
+
+func _place_ashwatch():
+	var glb = load("res://models/ashwatch-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	instance.rotation_degrees.y = 0.0
+	# Next to Blackthorn Gables (13.0, 0, 41), offset along X
+	var pos = Vector3(16.0, 0.0, 41.0)
+	instance.position = pos
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	_disable_shadows(instance)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 0.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/ashwatch-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			var shape = BoxShape3D.new()
+			var s = entry.size
+			shape.size = Vector3(s[0] * 1.4, s[1] * 1.4, s[2] * 1.4)
+			col.shape = shape
+			var p = entry.position
+			col.position = Vector3(p[0] * 1.4, p[1] * 1.4, p[2] * 1.4)
+			body.add_child(col)
+
+func _place_black_ledger():
+	var glb = load("res://models/black-ledger-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	# Left of Crooked Spindle (0.1m gap); front face matched to street
+	var pos = Vector3(-17.81, 0.0, 1.95)
+	instance.position = pos
+	add_child(instance)
+	_strip_collision(instance)
+	# Passage-aware collision: boxes + convex vault sections from collisions.json
+	var body = StaticBody3D.new()
+	body.position = pos
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/black-ledger-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_crooked_spindle():
+	var glb = load("res://models/crooked-spindle-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	# Bounds: X ±3.918, Z: -3.6 to +4.258
+	# Right edge flush with apothecary left wall (X=-6), 0.1m gap; front face at street Z=5
+	instance.position = Vector3(-10.12, 0.0, 2.04)
+	add_child(instance)
+	_strip_collision(instance)
+	# Box collision from house.tscn: 7.10 × 7.0 × 6.35, centre Y=3.5
+	_add_blocker(Vector3(-10.12, 3.5, 2.04), Vector3(7.10, 7.0, 6.35))
+
+func _place_row_house_west():
+	var glb = load("res://models/grim-medieval-row-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.4, 1.4, 1.4)
+	# Right up against the black ledger's west edge (X≈-21.2), same Z, facing north
+	instance.position = Vector3(-24.0, 0.0, 2.15)
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	_add_blocker(Vector3(-24.0, 5.5, 2.15), Vector3(9.0, 11.0, 6.0))
+
+func _place_thirteenth_hour():
+	var glb = load("res://models/thirteenth-hour-house.glb")
+	if not glb:
+		return
+	var pos = Vector3(-24.86, 0.0, 11.06)
+	var container = Node3D.new()
+	container.set_script(load("res://scripts/thirteenth_hour_house.gd"))
+	var model = glb.instantiate()
+	model.name = "Model"
+	container.add_child(model)
+	_strip_collision(model)
+	container.position = pos
+	container.rotation_degrees.y = 90.0
+	add_child(container)
+
+func _place_sable_court():
+	var glb = load("res://models/sable-court-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(-25.16, 0.0, 21.7)
+	instance.position = pos
+	instance.rotation_degrees.y = 90.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 90.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/sable-court-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_bell_ringers():
+	var glb = load("res://models/bell-ringers-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(-24.86, 0.0, 31.4)
+	instance.position = pos
+	instance.rotation_degrees.y = 90.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 90.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/bell-ringers-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_hollow_stag_tavern():
+	var glb = load("res://models/hollow-stag-tavern.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(-27.26, 0.0, 45.7)
+	instance.position = pos
+	instance.rotation_degrees.y = 90.0
+	add_child(instance)
+	# GLB includes interior collision — do not strip
+	_dim_glb_lights(instance, 0.0)
+	_disable_shadows(instance)
+	var door = instance.find_child("FrontDoorPivot", true, false)
+	if door:
+		door.rotation_degrees.y = 98.0
+
+func _place_hollowmere():
+	var glb = load("res://models/hollowmere-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	# Across the street from Bell Ringers (X=-24.86, rot=90, faces +X)
+	# Hollowmere at rot=270 faces -X — the two fronts look at each other
+	var pos = Vector3(15.0, 0.0, 31.4)
+	instance.position = pos
+	instance.rotation_degrees.y = 270.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	_disable_shadows(instance)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 270.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/hollowmere-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			var shape = BoxShape3D.new()
+			var s = entry.size
+			shape.size = Vector3(s[0], s[1], s[2])
+			col.shape = shape
+			var p = entry.position
+			col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_hollow_lantern():
+	var glb = load("res://models/hollow-lantern-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(-5.6, 0.0, 30.0)
+	instance.position = pos
+	instance.rotation_degrees.y = 90.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 90.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/hollow-lantern-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_tallow_lane_2():
+	var glb = load("res://models/tallow-lane-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	instance.scale = Vector3(1.64, 1.64, 1.64)
+	var pos = Vector3(25.0, 0.0, 30.0)
+	instance.position = pos
+	instance.rotation_degrees.y = 90.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 90.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/tallow-lane-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_rookery():
+	var glb = load("res://models/rookery-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(-5.3, 0.0, 38.0)
+	instance.position = pos
+	instance.rotation_degrees.y = 90.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 90.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/rookery-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_tallow_lane():
+	var glb = load("res://models/tallow-lane-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(5.3, 0.0, 41.0)
+	instance.position = pos
+	instance.rotation_degrees.y = 270.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 270.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/tallow-lane-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_cathedral():
+	const SaintAthanasius = preload("res://scripts/saint_athanasius_cathedral.gd")
+	var glb = load("res://models/saint-athanasius-cathedral.glb")
+	if not glb:
+		return
+	var container = Node3D.new()
+	container.set_script(SaintAthanasius)
+	var model = glb.instantiate()
+	model.name = "Model"
+	container.add_child(model)
+	_strip_collision(model)
+	container.position = Vector3(0.0, 0.0, 80.0)
+	container.rotation_degrees.y = 180.0
+	add_child(container)
+
+	# Manual floor — _strip_collision removed the GLB's own collision
+	# Nave floor: 14m wide × 22m deep, covering Z 68→90
+	var floor_body = StaticBody3D.new()
+	floor_body.position = Vector3(0.0, 0.0, 79.0)
+	add_child(floor_body)
+	var floor_col = CollisionShape3D.new()
+	var floor_shape = BoxShape3D.new()
+	floor_shape.size = Vector3(14.0, 0.2, 22.0)
+	floor_col.shape = floor_shape
+	floor_body.add_child(floor_col)
+
+	# Altar ramp: rises ~0.5m over 4m (Z 89→93), slopes up toward +Z
+	var ramp_body = StaticBody3D.new()
+	ramp_body.position = Vector3(0.0, 0.25, 91.0)
+	ramp_body.rotation_degrees.x = 7.1  # atan(0.5/4) — slopes up toward altar
+	add_child(ramp_body)
+	var ramp_col = CollisionShape3D.new()
+	var ramp_shape = BoxShape3D.new()
+	ramp_shape.size = Vector3(8.0, 0.2, 4.03)
+	ramp_col.shape = ramp_shape
+	ramp_body.add_child(ramp_col)
+
+	# Altar platform: raised floor at Z 93→98, Y 0.5m
+	var altar_body = StaticBody3D.new()
+	altar_body.position = Vector3(0.0, 0.5, 95.5)
+	add_child(altar_body)
+	var altar_col = CollisionShape3D.new()
+	var altar_shape = BoxShape3D.new()
+	altar_shape.size = Vector3(10.0, 1.0, 5.0)
+	altar_col.shape = altar_shape
+	altar_body.add_child(altar_col)
+
+func _place_mid_cross_house():
+	var glb = load("res://models/iron-quill-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(20.0, 0.0, 14.8)
+	instance.position = pos
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 180.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/iron-quill-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_tallow_lane_cross():
+	var glb = load("res://models/tallow-lane-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(27.0, 0.0, 14.8)
+	instance.position = pos
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 180.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/tallow-lane-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_iron_quill():
+	var glb = load("res://models/iron-quill-house.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var pos = Vector3(27.0, 0.0, 22.0)
+	instance.position = pos
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 180.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/iron-quill-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			if entry.has("points"):
+				var shape = ConvexPolygonShape3D.new()
+				var points = PackedVector3Array()
+				for p in entry.points:
+					points.append(Vector3(p[0], p[1], p[2]))
+				shape.points = points
+				col.shape = shape
+			else:
+				var shape = BoxShape3D.new()
+				var s = entry.size
+				shape.size = Vector3(s[0], s[1], s[2])
+				col.shape = shape
+				var p = entry.position
+				col.position = Vector3(p[0], p[1], p[2])
+			body.add_child(col)
+
+func _place_saint_oswin():
+	var glb = load("res://models/saint-oswin-church.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	var sc = 1.2
+	instance.scale = Vector3(sc, sc, sc)
+	var pos = Vector3(1.5, 0.0, 55.0)
+	instance.position = pos
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	_disable_shadows(instance)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = 180.0
+	add_child(body)
+	var entries = JSON.parse_string(FileAccess.get_file_as_string("res://models/saint-oswin-collisions.json"))
+	if entries:
+		for entry in entries:
+			var col = CollisionShape3D.new()
+			var shape = BoxShape3D.new()
+			var s = entry.size
+			shape.size = Vector3(s[0] * sc, s[1] * sc, s[2] * sc)
+			col.shape = shape
+			var p = entry.position
+			col.position = Vector3(p[0] * sc, p[1] * sc, p[2] * sc)
+			body.add_child(col)
+
+func _place_barrowroot():
+	var glb = load("res://models/barrowroot-provisions.glb")
+	if not glb:
+		return
+	var instance = glb.instantiate()
+	# Back face (local Z=-3.24) aligned with church back (world Z=60.04)
+	# At rotation=180° local -Z → world +Z, so center_Z = 60.04 - 3.24 = 56.8
+	var pos = Vector3(11.0, 0.0, 56.8)
+	instance.position = pos
+	instance.rotation_degrees.y = 180.0
+	add_child(instance)
+	# GLB includes interior collision — do not strip
+	_dim_glb_lights(instance, 0.0)
+	_disable_shadows(instance)
+	var door = instance.find_child("FrontDoorPivot", true, false)
+	if door:
+		door.rotation_degrees.y = 90.0
+
+func _place_left_tcross_houses():
+	var glb = load("res://models/grim-eight-new-house-fronts.glb")
+	if not glb:
+		return
+	var pos = Vector3(36.0, 0.0, 8.5)
+	var rot_y = 270.0
+	var instance = glb.instantiate()
+	instance.position = pos
+	instance.rotation_degrees.y = rot_y
+	add_child(instance)
+	_strip_collision(instance)
+	_dim_glb_lights(instance, 0.0)
+	# Per-house collision boxes from layout.json (local space, rotation applied by body)
+	var body = StaticBody3D.new()
+	body.position = pos
+	body.rotation_degrees.y = rot_y
+	add_child(body)
+	var houses = [
+		{"p": [-22.0, 3.5,  -2.5], "s": [6.2, 7.0, 5.0]},
+		{"p": [-16.2, 4.4,  -2.5], "s": [5.4, 8.8, 5.0]},
+		{"p": [ -9.9, 3.6,  -2.5], "s": [7.2, 7.2, 5.0]},
+		{"p": [ -3.3, 4.15, -2.5], "s": [6.0, 8.3, 5.0]},
+		{"p": [  2.9, 3.55, -2.5], "s": [6.4, 7.1, 5.0]},
+		{"p": [  9.0, 3.9,  -2.5], "s": [5.8, 7.8, 5.0]},
+		{"p": [ 15.4, 4.4,  -2.5], "s": [7.0, 8.8, 5.0]},
+		{"p": [ 22.0, 3.95, -2.5], "s": [6.2, 7.9, 5.0]},
+	]
+	for h in houses:
+		var col = CollisionShape3D.new()
+		var shape = BoxShape3D.new()
+		shape.size = Vector3(h["s"][0], h["s"][1], h["s"][2])
+		col.shape = shape
+		col.position = Vector3(h["p"][0], h["p"][1], h["p"][2])
+		body.add_child(col)
+
+func _place_left_tcross_street():
+	var albedo = load("res://models/gravel_macro__tile_texture_0.jpg")
+	var rough  = load("res://models/gravel_macro__tile_texture_1.png")
+	var normal = load("res://models/gravel_macro__tile_texture_2.jpg")
+	var mat = StandardMaterial3D.new()
+	if albedo: mat.albedo_texture = albedo
+	if rough:  mat.roughness_texture = rough
+	if normal:
+		mat.normal_enabled = true
+		mat.normal_texture = normal
+	mat.roughness = 1.0
+
+	# South branch of the T — the only new surface needed (X 29→43, Z -14→5)
+	# Main cross-street and forward street now extend to X=43, covering the rest seamlessly.
+	mat.uv1_scale = Vector3(9, 14, 1)
+	_make_street_plane(Vector3(36.0, 0.0, -4.5), Vector2(14, 19), mat)
+
+	# Right-end wall behind houses at X=43
+	var rw = StaticBody3D.new()
+	rw.position = Vector3(43.0, 2.0, 9.0)
+	add_child(rw)
+	var rwc = CollisionShape3D.new()
+	var rws = BoxShape3D.new()
+	rws.size = Vector3(0.2, 4.0, 60.0)
+	rwc.shape = rws
+	rw.add_child(rwc)
+
+	# South end wall at Z=-14
+	var sw = StaticBody3D.new()
+	sw.position = Vector3(36.0, 2.0, -14.0)
+	add_child(sw)
+	var swc = CollisionShape3D.new()
+	var sws = BoxShape3D.new()
+	sws.size = Vector3(14.0, 4.0, 0.2)
+	swc.shape = sws
+	sw.add_child(swc)
+
 func _on_kill_zone_body_entered(body):
 	if body.is_in_group("player"):
 		body.global_position = PLAYER_SPAWN
 		body.velocity = Vector3.ZERO
+
+func _load_apothecary_shell():
+	# Disable only the original building shell. Preserve all gameplay nodes.
+	for part in ["Floor","WallBack","WallLeft","WallRight","WallFrontLeft","WallFrontRight","WallAboveDoor","Ceiling"]:
+		var old = get_node_or_null(part)
+		if old:
+			for child in old.get_children():
+				if child is GeometryInstance3D: child.visible = false
+				if child is CollisionShape3D: child.disabled = true
+	var shell = preload("res://apothecary_house/shell.tscn").instantiate()
+	shell.name = "ApothecaryHouseShell"
+	add_child(shell)
+
