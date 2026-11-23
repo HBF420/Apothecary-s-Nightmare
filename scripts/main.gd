@@ -31,9 +31,8 @@ func _ready():
 	var player = $Player
 	if player:
 		player.add_to_group("player")
-		# Start in front of Saint Oswin church
-		player.global_position = Vector3(1.5, 0.1, 47.0)
-		player.rotation_degrees.y = 0.0
+		player.global_position = PLAYER_SPAWN
+		player.rotation_degrees.y = 180.0
 	_apply_floor_texture()
 	_apply_wall_texture()
 	_place_streets()
@@ -788,7 +787,6 @@ func _place_vial_model():
 	$Vial.add_child(instance)
 	_strip_collision(instance)
 	$Vial.setup(instance)
-	$Vial.fill()  # pre-filled for testing — wrong remedy triggers death animation
 
 func _place_customer():
 	var glb = load("res://models/Walking.glb")
